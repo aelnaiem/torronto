@@ -1,10 +1,10 @@
 package p1
 
 const (
-	errOK             = 0
-	errUnknownWarning = 1
-	errWarning        = -2
-	errCannotConnect  = -3
-	errNoPeersFound   = -4
-	errPeerNotFound   = 5
+	ErrOK             = 0
+	ErrUnknownWarning = 1
+	ErrWarning        = -2
+	ErrCannotConnect  = -3
+	ErrNoPeersFound   = -4
+	ErrPeerNotFound   = 5
 )

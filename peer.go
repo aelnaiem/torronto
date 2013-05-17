@@ -9,26 +9,24 @@ type Peer struct {
 	peers        Peers
 }
 
-func (peer Peer) insert(filename String) int {
+func (peer Peer) Insert(filename String) int {
 	// code
 }
 
-func (peer Peer) query(status Status) int {
+func (peer Peer) Query(status Status) int {
 	// code
 }
 
-func (peer Peer) join() int {
-	// codde
-}
-
-func (peer Peer) leave() int {
+func (peer Peer) Join() int {
 	// code
 }
 
-type State int
+func (peer Peer) Leave() int {
+	// code
+}
 
 const (
-	connected    = iota
-	disconnected = iota
-	unknown      = iota
+	Connected    = iota
+	Disconnected = iota
+	Unknown      = iota
 )

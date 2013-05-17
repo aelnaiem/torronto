@@ -8,22 +8,22 @@ type Status struct {
 	weightedLeastReplication []float32
 }
 
-func (status Status) numberofFiles() int {
+func (status Status) NumberofFiles() int {
 	// code
 }
 
-func (status Status) fractionPresentLocally(fileNumber int) float32 {
+func (status Status) FractionPresentLocally(fileNumber int) float32 {
 	// code
 }
 
-func (status Status) fractionPresent(fileNumber int) float32 {
+func (status Status) FractionPresent(fileNumber int) float32 {
 	// code
 }
 
-func (status Status) minimumReplicationLevel(fileNumber int) int {
+func (status Status) MinimumReplicationLevel(fileNumber int) int {
 	// code
 }
 
-func (status Status) averageReplicationLevel(fileNumber int) float32 {
+func (status Status) AverageReplicationLevel(fileNumber int) float32 {
 	// code
 }

@@ -1,7 +1,7 @@
 package p1
 
 const (
-	chunkSize = 65536
-	maxPeers  = 6
-	maxFiles  = 100
+	ChunkSize = 65536
+	MaxPeers  = 6
+	MaxFiles  = 100
 )

@@ -5,14 +5,14 @@ type Peers struct {
 	peers    []Peer
 }
 
-func (peers Peers) initialize(peersFile String) int {
+func (peers Peers) Initialize(peersFile String) int {
 	// code
 }
 
-func (peers Peers) getPeer(i int) Peer {
+func (peers Peers) GetPeer(i int) Peer {
 	// code
 }
 
-func (peers Peers) visit(i int) {
+func (peers Peers) Visit(i int) {
 	// code
 }
