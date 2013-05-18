@@ -7,6 +7,8 @@ import (
 type Peer struct {
 	currentState State
 	peers        Peers
+	host         String
+	port         int
 }
 
 func (peer Peer) Insert(filename String) int {
