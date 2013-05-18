@@ -52,7 +52,7 @@ func (peers Peers) Initialize(peersFile String) int {
 }
 
 func (peers Peers) GetPeer(i int) Peer {
-	// code
+	return peers[i]
 }
 
 func (peers Peers) Visit(i int) {

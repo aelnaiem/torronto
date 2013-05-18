@@ -20,11 +20,20 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	// code
+	// join Peers container
+
+	// push local files to other peers
+
+	// pull other files that don't exist locally
+
 }
 
 func (peer Peer) Leave() int {
-	// code
+	// leave Peers container
+
+	// push out unique chunks, least replicated first
+
+	// close all sockets
 }
 
 const (
