@@ -1,9 +1,9 @@
 package torronto
 
 import (
-  "io/ioutil",
-  "strings",
-  "strconv"
+	"io/ioutil"
+	"strconv"
+	"strings"
 )
 
 type Peers struct {
@@ -12,43 +12,43 @@ type Peers struct {
 }
 
 func (peers Peers) Initialize(peersFile String) int {
-	content, err := ioutil.ReadFile("peersFile");
-  if err != nil {
-    // exit gracefully if the file is not found
-  }
+	content, err := ioutil.ReadFile("peersFile")
+	if err != nil {
+		// exit gracefully if the file is not found
+	}
 
-  lines := strings.Split(string(content), "\n")
-  if len(lines > MaxFiles) {
-    // too many peers, should exit?
-  }
+	lines := strings.Split(string(content), "\n")
+	if len(lines > MaxFiles) {
+		// too many peers, should exit?
+	}
 
-  peers = make([]Peer, len(lines))
-  for i, line := range lines {
-    // create a new peer and add it to the peers array and increment
-    // the number of peers
+	peers = make([]Peer, len(lines))
+	for i, line := range lines {
+		// create a new peer and add it to the peers array and increment
+		// the number of peers
 
-    // empty line occurs at the end of the file
-    if len(line) == 0 {
-      continue
-    }
+		// empty line occurs at the end of the file
+		if len(line) == 0 {
+			continue
+		}
 
-    peerData := strings.Split(string(line), ",");
-    if (len(peerData) != 2) {
-      // incorrectly formed data, exit?
-    }
+		peerData := strings.Split(string(line), ",")
+		if len(peerData) != 2 {
+			// incorrectly formed data, exit?
+		}
 
-    hostName, portNumber, err := peerData[0], Atoi(peerData[1])
-    if (err != nil) {
-      // portNumber given was not an integer, exit?
-    }
+		hostName, portNumber, err := peerData[0], Atoi(peerData[1])
+		if err != nil {
+			// portNumber given was not an integer, exit?
+		}
 
-    peers[i] = {
-      currentState = Connected,
-      host = hostName,
-      port = portNumber
-    }
-    numPeers++
-  }
+		peers[i] = Peer{
+			currentState: Connected,
+			host:         hostName,
+			port:         portNumber,
+		}
+		numPeers++
+	}
 }
 
 func (peers Peers) GetPeer(i int) Peer {
