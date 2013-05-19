@@ -1,4 +1,4 @@
-package p1
+package torronto
 
 type Peers struct {
 	numPeers int
