@@ -1,4 +1,4 @@
-package p1 // think of a better name
+package torronto
 
 import (
 	"fmt"
