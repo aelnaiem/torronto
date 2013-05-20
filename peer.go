@@ -12,11 +12,14 @@ type Peer struct {
 }
 
 func (peer Peer) Insert(filename String) int {
-	// code
+	// add the file to the local node
+
+	// divide the file by chunks and push it out
+	// to peers
 }
 
 func (peer Peer) Query(status Status) int {
-	// code
+	// not sure what this is for...
 }
 
 func (peer Peer) Join() int {
