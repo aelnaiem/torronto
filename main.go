@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	// instantiate peer and connect to socket
+	// connect to socket
 	// service := get service port, maybe it's provided when
 	// the program is run
 
@@ -32,6 +32,8 @@ func main() {
 	//   goroutine for handling connection
 	//   go peerhandler(conn)?
 	// }
+	//
+	// instantiate peer and join network
 
 }
 
@@ -42,6 +44,23 @@ func main() {
 
 // handle a peer connection
 // func peerhandler(conn net.Conn) {
+//  check message:
+
+//  if (new peer) {
+  //   create peer object
+  //   if (first) {
+  //     peer.newConnection(newPeer)
+  //   }
+  //   peer.Peers.addPeer(newPeer)
+  //   passAlongMessage(message)
+  // }
+
+if (leaving) {
+  peer.updateConnect(oldPeer)
+  peer.Peers.removePeer(oldPeer)
+  passAlongMessage(message)
+}
+  if leaving network, send out message to everyone
 
 // }
 
