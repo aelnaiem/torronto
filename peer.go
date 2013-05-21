@@ -7,22 +7,36 @@ import (
 type Peer struct {
 	currentState State
 	peers        Peers
+	host         String
+	port         int
 }
 
 func (peer Peer) Insert(filename String) int {
-	// code
+	// add the file to the local node
+
+	// divide the file by chunks and push it out
+	// to peers
 }
 
 func (peer Peer) Query(status Status) int {
-	// code
+	// not sure what this is for...
 }
 
 func (peer Peer) Join() int {
-	// code
+	// join Peers container
+
+	// push local files to other peers
+
+	// pull other files that don't exist locally
+
 }
 
 func (peer Peer) Leave() int {
-	// code
+	// leave Peers container
+
+	// push out unique chunks, least replicated first
+
+	// close all sockets
 }
 
 const (
