@@ -56,5 +56,11 @@ func (peers Peers) GetPeer(i int) Peer {
 }
 
 func (peers Peers) Visit(i int) {
-	// code
+	// not sure what this is for...
 }
+
+// addPeer(hostName string, portNumber int) function
+//  updating the peersFile and the peers array
+
+// removePeer(hostName string, portNumber int) function
+//  updating the peersFile and the peers array

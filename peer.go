@@ -23,7 +23,7 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	// join Peers container
+	// join Peers container, by choosing n peers to send messages to
 
 	// push local files to other peers
 
@@ -38,6 +38,16 @@ func (peer Peer) Leave() int {
 
 	// close all sockets
 }
+
+// func newConnection(newPeer Peer) {
+// code to replace newest connection with the newPeer
+// Peers.addPeer(peer)
+// }
+
+// func updateConnection(hostName string, portNumber int) bool {
+//	 check if hostName and portNumber in list of receivers
+//	if they are, remove them and add a new receiver, else do nothing
+// }
 
 const (
 	Connected    = iota
