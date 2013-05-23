@@ -77,20 +77,25 @@ func listenForMessages() {
 
 	  // handle any new messages
 	  go handleMessage(conn)
-	  conn.Close()
 	}
 }
 
 // handle a message from a peer
 func handleMessage(conn net.Conn) {
+
+	defer conn.Close()
  // TODO: translate message and then...
-	 if (new peer) {
+	 if (new peer or filelist) {
 	  // TODO: get hostName and portNumber and then...
-	  peer.Peers.addPeer(newPeer)
+	  hostPeer.Peers.connectPeer(hostName, portNumber)
 	}
 
 	if (leaving peer) {
-	  peer.Peers.removePeer(hostName, portNumber)
+	  hostPeer.Peers.disconnectPeer(hostName, portNumber)
+	}
+
+	if (filelist) {
+		// update status..
 	}
 }
 

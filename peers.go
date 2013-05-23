@@ -43,7 +43,7 @@ func (peers Peers) Initialize(peersFile String) int {
 		}
 
 		peers[i] = Peer{
-			currentState: Connected,
+			currentState: Unknown,
 			host:         hostName,
 			port:         portNumber,
 		}
@@ -59,10 +59,10 @@ func (peers Peers) Visit(i int) {
 	// not sure what this is for...
 }
 
-func addPeer(hostName string, portNumber int) {
-
+func connectPeer(hostName string, portNumber int) {
+	// change peer state to Connected
 }
 
-func removePeer(hostName string, portNumber int) {
-
+func disconnectPeer(hostName string, portNumber int) {
+	// change peer state to Disconnected
 }

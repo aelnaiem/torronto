@@ -23,8 +23,9 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	// join Peers container
-	peers.addPeer(host, port)
+	// message other peers to tell them you're in the network
+	// with a timeout. if they don't respond in time, set their
+	// status to disconnected
 
 	// push local files to other peers
 
