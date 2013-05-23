@@ -32,7 +32,7 @@ func (peers Peers) Initialize(peersFile String) int {
 			continue
 		}
 
-		peerData := strings.Split(string(line), ",")
+		peerData := strings.Split(string(line), " ")
 		if len(peerData) != 2 {
 			// incorrectly formed data, exit?
 		}
@@ -59,8 +59,10 @@ func (peers Peers) Visit(i int) {
 	// not sure what this is for...
 }
 
-// addPeer(hostName string, portNumber int) function
-//  updating the peersFile and the peers array
+func addPeer(hostName string, portNumber int) {
 
-// removePeer(hostName string, portNumber int) function
-//  updating the peersFile and the peers array
+}
+
+func removePeer(hostName string, portNumber int) {
+
+}
