@@ -1,4 +1,4 @@
-package p1 // think of a better name
+package torronto
 
 import (
 	"fmt"
@@ -7,22 +7,33 @@ import (
 type Peer struct {
 	currentState State
 	peers        Peers
+	host         String
+	port         int
 }
 
 func (peer Peer) Insert(filename String) int {
-	// code
+	// add the file to the local node
+
+	// divide the file by chunks and push it out
+	// to peers
 }
 
 func (peer Peer) Query(status Status) int {
-	// code
+	// not sure what this is for...
 }
 
 func (peer Peer) Join() int {
-	// code
+	// send out join message to all peers with your file list
+	// if they don't respond in time, set their status to
+	// disconnected
+
+	peers.connectPeer(host, port)
 }
 
 func (peer Peer) Leave() int {
-	// code
+	// push out unique chunks, least replicated first
+
+	// close all sockets
 }
 
 const (
