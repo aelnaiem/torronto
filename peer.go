@@ -23,7 +23,9 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	// join Peers container, by choosing n peers to send messages to
+	// message other peers to tell them you're in the network
+	// with a timeout. if they don't respond in time, set their
+	// status to disconnected
 
 	// push local files to other peers
 
@@ -32,22 +34,10 @@ func (peer Peer) Join() int {
 }
 
 func (peer Peer) Leave() int {
-	// leave Peers container
-
 	// push out unique chunks, least replicated first
 
 	// close all sockets
 }
-
-// func newConnection(newPeer Peer) {
-// code to replace newest connection with the newPeer
-// Peers.addPeer(peer)
-// }
-
-// func updateConnection(hostName string, portNumber int) bool {
-//	 check if hostName and portNumber in list of receivers
-//	if they are, remove them and add a new receiver, else do nothing
-// }
 
 const (
 	Connected    = iota
