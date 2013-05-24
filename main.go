@@ -3,6 +3,7 @@ package torronto
 import (
 	"fmt"
 	"io/ioutil"
+	"json"
 	"net"
 	"os"
 	"strings"
@@ -39,9 +40,9 @@ func main() {
 	peers := Peers{}
 	peers.initialize()
 
-	hostPeer = Peer {
+	hostPeer = Peer{
 		currentState: Connected,
-		peers,        peers,
+		peers:        peers,
 		host:         hostName,
 		port:         portNumber,
 	}
@@ -87,28 +88,33 @@ func handleMessage(conn net.Conn) {
 
 	defer conn.Close()
 
+	// TODO: one of the json messages is followed by a file chunk
+	// so we need to unmarshal all messages at a certain size so that
+	// we can check what the file chunk is and if we want it before we
+	// download all of it
+
 	//identify the type of message
 	//b is a byte array by default, holds the JSON msg passed
+
 	var m Message
 	err := json.Unmarshal(b, &m)
 
-
-	if (m.action = "join") {
+	if m.action == "join" {
 		//get hostName and portNumber and then...
 		hostPeer.Peers.connectPeer(m.HostName, m.PortNumber)
 	}
 
-	if (m.action = "leave") {
+	if m.action == "leave" {
 		hostPeer.Peers.disconnectPeer(m.HostName, m.PortNumber)
 	}
 
-	if (m.action = "files") {
+	if m.action == "files" {
 		// update status..
 	}
-	if (m.action = "upload") {
+	if m.action == "upload" {
 
 	}
-	if (m.action = "download") {
+	if m.action == "download" {
 
 	}
 }
@@ -119,10 +125,4 @@ func checkError(err error) {
 	if err != nil {
 		// error handling
 	}
-}
-
-type Message struct {
-		HostName string
-		PortNumber string
-		Action string
 }

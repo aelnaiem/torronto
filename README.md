@@ -19,12 +19,12 @@ _When a joins the network, it send out a message that it's joining and a list of
     [
       {
         "file": "<fileName>",
-        "chunks": "[<chunkNumber>, <chunkNumber>]"
+        "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
       },
       {
         "file": "<fileName>",
-        "chunks": "[<chunkNumber>, <chunkNumber>]"
-      }
+        "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
+      }, ...
     ]
 }
 ```
@@ -51,13 +51,13 @@ _When a joins the network, it send out a message that it's joining and a list of
   "files":
     [
       {
-        "file": "<fileName>",
-        "chunks": "[<chunkNumber>, <chunkNumber>]"
+        "fileName": "<fileName>",
+        "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
       },
       {
-        "file": "<fileName>",
-        "chunks": "[<chunkNumber>, <chunkNumber>]"
-      }
+        "fileName": "<fileName>",
+        "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
+      }, ...
     ]
 }
 ```
@@ -69,8 +69,11 @@ _Each peer will then update the status of the files it has, and send out request
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
   "action": "download",
-  "file": "<fileName>",
-  "chunk", "<chunkNumber>"
+  "file":
+    {
+      "fileName": "<fileName>",
+      "chunks": [<chunkNumber>]
+    }
 }
 ```
 
@@ -80,7 +83,10 @@ _Each peer will then update the status of the files it has, and send out request
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
   "action": "upload",
-  "file": "<fileName>",
-  "chunk": "<chunkNumber>",
+  "file":
+    {
+      "fileName": "<fileName>",
+      "chunks": [<chunkNumber>]
+    }
 }
 ```
