@@ -23,14 +23,11 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	// message other peers to tell them you're in the network
-	// with a timeout. if they don't respond in time, set their
-	// status to disconnected
+	// send out join message to all peers with your file list
+	// if they don't respond in time, set their status to
+	// disconnected
 
-	// push local files to other peers
-
-	// pull other files that don't exist locally
-
+	peers.connectPeer(host, port)
 }
 
 func (peer Peer) Leave() int {
