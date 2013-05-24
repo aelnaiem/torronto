@@ -7,13 +7,25 @@ torronto - A BitTorrent Implementation in Go
 _Using [json](www.json.org) for data interchange_
 
 _Each message is a header with some max size_
-
+_
+_When a joins the network, it send out a message that it's joining and a list of its files._
 ### Joining network
 ```
 {
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
-  "action": "join"
+  "action": "join",
+  "files":
+    [
+      {
+        "file": "<fileName>",
+        "chunks": "[<chunkNumber>, <chunkNumber>]"
+      },
+      {
+        "file": "<fileName>",
+        "chunks": "[<chunkNumber>, <chunkNumber>]"
+      }
+    ]
 }
 ```
 
@@ -28,16 +40,7 @@ _Each message is a header with some max size_
 ```
 
 * * *
-_When a joins the network, it send out a message requesting a list of files from all of it's peers. The peers respond with a file list, and send a request for the new node's file list._
-
-### Fetch file list
-```
-{
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "fetch"
-}
-```
+ _The peers respond with a file list._
 
 ### Returning file list
 ```
@@ -66,7 +69,8 @@ _Each peer will then update the status of the files it has, and send out request
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
   "action": "download",
-  "file": "file"
+  "file": "<fileName>",
+  "chunk", "<chunkNumber>"
 }
 ```
 

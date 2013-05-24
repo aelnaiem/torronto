@@ -23,6 +23,8 @@ func (peers Peers) Initialize(peersFile String) int {
 	}
 
 	peers = make([]Peer, len(lines))
+	numPeers = 0
+
 	for i, line := range lines {
 		// create a new peer and add it to the peers array and increment
 		// the number of peers
