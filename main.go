@@ -52,7 +52,9 @@ func main() {
 // Listen for user input to stdin
 func listenForInput() {
 	for {
+		var input string
 		_, err := fmt.Scanln(&input)
+
 		if err != nil {
 			inputArr := strings.Split(input, " ")
 			if strings.ToLower(inputArr[0]) == "insert" {
@@ -85,7 +87,7 @@ func handleMessage(conn net.Conn) {
 
 	defer conn.Close()
  // TODO: translate message and then...
-	 if (new peer or filelist) {
+	if (new peer or filelist) {
 	  // TODO: get hostName and portNumber and then...
 	  hostPeer.Peers.connectPeer(hostName, portNumber)
 	}
