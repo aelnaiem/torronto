@@ -2,14 +2,40 @@ package torronto
 
 type Message struct {
 	HostName   string
-	PortNumber string
-	Action     string
-	Files      []string
-	File       string
+	PortNumber int
+	Action     int
+	Files      []File
 }
 
-// Message should have a function to create a message given certain
-// values
 
-// Messages should be created to a specific 'header' size so it's easy
-// to tell what a message is vs. what a chunk is (for uploads)
+func create_message(hostName string, portNumber int, action int, files []File) []byte {
+
+	newinformation := Message{
+		HostName: hostName,		//hostName = 32bits
+		PortNumber: portNumber,	//portNumber = 16 bits
+		Action: action,			//store the action as a string or an int? action = 3 to 4 bits?
+		Files: files,
+	}
+	newMessage, err := json.Marshal(newinformation)
+
+	return newMessage
+}
+
+//header size consists of hostName, portNumber and action
+
+func decode_message(recdMessage []byte) Message {
+
+	var recd_json_message Message
+	err := json.Unmarshal(recdMessage, &recd_json_message)
+
+	return recd_json_message
+
+}
+
+const (
+	Join  = iota
+	Leave = iota
+	Files = iota
+	Upload = iota
+	Download = iota
+)

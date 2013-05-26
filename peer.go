@@ -23,11 +23,18 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	// send out join message to all peers with your file list
-	// if they don't respond in time, set their status to
-	// disconnected
+	filelist []File  := nil //shouldn't be nil, need to create the list of files here
+	//create the message to join 
+	joinMessage:= create_message(peer.host, string(peer.port), 1, fileList)
+	
 
-	peers.connectPeer(host, port)
+	// send out join message to all peers with your file list
+
+	//why do this explicity?
+	//if we get a response in time, set status to connected
+	//peers.connectPeer(host, port)
+	// else if they don't respond in time, set their status to
+	//peers.disconnectPeer(host, port)
 }
 
 func (peer Peer) Leave() int {
