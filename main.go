@@ -2,6 +2,7 @@ package torronto
 
 import (
 	"fmt"
+	"github.com/howeyc/fsnotify"
 	"io/ioutil"
 	"json"
 	"net"
@@ -29,9 +30,20 @@ func main() {
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	checkError(err)
 
-	// read for input from stdin and do the appropriate action
-	// e.g. query for file, insert a file
-	go listenForInput()
+	// listen for status query
+	go listenForQuery()
+
+	// listen for files added to files folder
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		// error
+	}
+	go listenForFiles()
+
+	err = watcher.Watch("files")
+	if err != nil {
+		// error
+	}
 
 	// listen for messages?
 	go listenForMessages()
@@ -47,25 +59,41 @@ func main() {
 		port:         portNumber,
 	}
 
+	// create status object
+	status := Status{}
+
+	// join the network
 	peer.Join()
 }
 
 // Listen for user input to stdin
-func listenForInput() {
+func listenForQuery() {
 	for {
 		var input string
 		_, err := fmt.Scanln(&input)
-
 		if err != nil {
-			inputArr := strings.Split(input, " ")
-			if strings.ToLower(inputArr[0]) == "query" {
-				if len(inputArr) == 2 {
-					hostPeer.Insert(inputArr[1])
-				} else {
-					fmt.Fprintf(os.Stderr, "Usage: insert <filename>")
-				}
+			// error
+		}
+
+		inputArr := strings.Split(input, " ")
+		if strings.ToLower(inputArr[0]) == "query" {
+			hostPeer.Query(&status)
+		}
+	}
+}
+
+func listenForFiles() {
+	for {
+		select {
+		case ev := <-watcher.Event:
+			select {
+			case ev.IsCreate():
+				hostPeer.Insert(ev.Name)
+			case ev.IsDelete():
+				// not necessary...
 			}
-			// TODO: accept other commands, like query...
+		case err := <-watcher.Error:
+			// error
 		}
 	}
 }
@@ -89,13 +117,13 @@ func handleMessage(conn net.Conn) {
 	//read up to headerSize bytes
 	receivedMessage = make([]byte, HeaderSize)
 	for {
-		n, err := conn.Read(receivedMessage[0:]) 
+		n, err := conn.Read(receivedMessage[0:])
 		if err != nil {
 			return
 		}
 	}
 
-	m := Message.decode_message(receivedMessage)	//convert JSON message into type Message
+	m := Message.decode_message(receivedMessage) //convert JSON message into type Message
 
 	//identify the type of message it is and perform the corresponding action
 	if m.action == join {
