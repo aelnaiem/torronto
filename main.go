@@ -58,7 +58,7 @@ func listenForInput() {
 
 		if err != nil {
 			inputArr := strings.Split(input, " ")
-			if strings.ToLower(inputArr[0]) == "insert" {
+			if strings.ToLower(inputArr[0]) == "query" {
 				if len(inputArr) == 2 {
 					hostPeer.Insert(inputArr[1])
 				} else {
