@@ -33,9 +33,9 @@ func decode_message(recdMessage []byte) Message {
 }
 
 const (
-	join  = iota
-	leave = iota
-	files = iota
-	upload = iota
-	download = iota
+	Join  = iota
+	Leave = iota
+	Files = iota
+	Upload = iota
+	Download = iota
 )
