@@ -2,13 +2,13 @@ package torronto
 
 type Message struct {
 	HostName   string
-	PortNumber string
+	PortNumber int
 	Action     int
 	Files      []File
 }
 
 
-func create_message(hostName string, portNumber string, action int, files []File) []byte {
+func create_message(hostName string, portNumber int, action int, files []File) []byte {
 
 	newinformation := Message{
 		HostName: hostName,		//hostName = 32bits
@@ -23,3 +23,19 @@ func create_message(hostName string, portNumber string, action int, files []File
 
 //header size consists of hostName, portNumber and action
 
+func decode_message(recdMessage []byte) Message {
+
+	var recd_json_message Message
+	err := json.Unmarshal(recdMessage, &recd_json_message)
+
+	return recd_json_message
+
+}
+
+const (
+	join  = iota
+	leave = iota
+	files = iota
+	upload = iota
+	download = iota
+)
