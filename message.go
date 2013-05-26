@@ -3,29 +3,23 @@ package torronto
 type Message struct {
 	HostName   string
 	PortNumber string
-	Action     string
-	Files      []string
-	File       string
+	Action     int
+	Files      []File
 }
 
 
+func create_message(hostName string, portNumber string, action int, files []File) []byte {
 
-func create_message(hostName string, portNumber string, action string, files []string, file string) []byte, int32 {
-	//enter the information into the variable newMessage of type struct
 	newinformation := Message{
-		HostName: hostName,
-		PortNumber: portNumber,
-		Action: action,
+		HostName: hostName,		//hostName = 32bits
+		PortNumber: portNumber,	//portNumber = 16 bits
+		Action: action,			//store the action as a string or an int? action = 3 to 4 bits?
 		Files: files,
-		File: file,
 	}
 	newMessage, err := json.Marshal(newinformation)
 
-	// return the header size so that it's easy
-	// to tell apart the header and the chunk/body
-	//not sure if commas, spaces and colons need to be included
-	headerLength = len("HostName") + len(hostName) + len("PortNumber") + len(portNumber) + len("Action") + len(action)
-
-	return newMessage, headerLength
+	return newMessage
 }
+
+//header size consists of hostName, portNumber and action
 
