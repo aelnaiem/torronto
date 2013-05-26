@@ -61,10 +61,24 @@ func (peers Peers) Visit(i int) {
 	// not sure what this is for...
 }
 
-func connectPeer(hostName string, portNumber int) {
-	// change peer state to Connected
+func (peers Peers) connectPeer(hostName string, portNumber int) {
+	//for each entry in peers []Peer, find the one with this hostName
+	//and portNumber and change status to Connected
+	for _, peer := range peers {
+		if peer.host == hostName && peer.port == portNumber {
+			peer.currentState = Connected
+			break
+		}
+	}
 }
 
-func disconnectPeer(hostName string, portNumber int) {
-	// change peer state to Disconnected
+func (peers Peers) disconnectPeer(hostName string, portNumber int) {
+	//for each entry in peers []Peer, find the one with this hostName
+	//and portNumber and change status to Disconnected
+	for _, peer := range peers {
+		if peer.host == hostName && peer.port == portNumber {
+			peer.currentState = Disconnected
+			break
+		}
+	}
 }
