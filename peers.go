@@ -62,23 +62,23 @@ func (peers Peers) Visit(i int) {
 }
 
 func (peers Peers) connectPeer(hostName string, portNumber int) {
-	//for each entry in peers []Peer, find the one with this hostName 
+	//for each entry in peers []Peer, find the one with this hostName
 	//and portNumber and change status to Connected
-	for i; peers_range := range peers {
-		if peers_range[i].host == hostName && peers_range[i].port == portNumber {
-			peers_range[i].currentState = Peer.Connected
-			peers[i] = peers_range[i]
+	for _, peer := range peers {
+		if peer.host == hostName && peer.port == portNumber {
+			peer.currentState = Connected
+			break
 		}
 	}
 }
- 
+
 func (peers Peers) disconnectPeer(hostName string, portNumber int) {
-	//for each entry in peers []Peer, find the one with this hostName 
+	//for each entry in peers []Peer, find the one with this hostName
 	//and portNumber and change status to Disconnected
-	for i; peers_range := range peers {
-		if peers_range[i].host == hostName && peers_range[i].port == portNumber {
-			peers_range[i].currentState = Peer.Disconnected
-			peers[i] = peers_range[i]
+	for _, peer := range peers {
+		if peer.host == hostName && peer.port == portNumber {
+			peer.currentState = Disconnected
+			break
 		}
 	}
 }
