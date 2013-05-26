@@ -65,7 +65,6 @@ func listenForInput() {
 					fmt.Fprintf(os.Stderr, "Usage: insert <filename>")
 				}
 			}
-
 			// TODO: accept other commands, like query...
 		}
 	}
@@ -77,7 +76,6 @@ func listenForMessages() {
 		if err != nil {
 			continue
 		}
-
 		// handle any new messages
 		go handleMessage(conn)
 	}
@@ -88,33 +86,37 @@ func handleMessage(conn net.Conn) {
 
 	defer conn.Close()
 
-	// TODO: one of the json messages is followed by a file chunk
-	// so we need to unmarshal all messages at a certain size so that
-	// we can check what the file chunk is and if we want it before we
-	// download all of it
-
-	//identify the type of message
-	//b is a byte array by default, holds the JSON msg passed
-
-	var m Message
-	err := json.Unmarshal(b, &m)
-
-	if m.action == "join" {
-		//get hostName and portNumber and then...
-		hostPeer.Peers.connectPeer(m.HostName, m.PortNumber)
+	//read up to headerSize bytes
+	receivedMessage = make([]byte, HeaderSize)
+	for {
+		n, err := conn.Read(receivedMessage[0:]) 
+		if err != nil {
+			return
+		}
 	}
 
-	if m.action == "leave" {
-		hostPeer.Peers.disconnectPeer(m.HostName, m.PortNumber)
+	m := Message.decode_message(receivedMessage)	//convert JSON message into type Message
+
+	//identify the type of message it is and perform the corresponding action
+	if m.action == join {
+		//get hostName and portNumber of the peer
+		//then connectPear is called to update status of this peer
+		connectPeer(m.HostName, m.PortNumber)
 	}
 
-	if m.action == "files" {
+	if m.action == leave {
+		//get hostName and portNumber of the peer
+		//then connectPear is called to update status of this peer
+		disconnectPeer(m.HostName, m.PortNumber)
+	}
+
+	if m.action == files {
 		// update status..
 	}
-	if m.action == "upload" {
+	if m.action == upload {
 
 	}
-	if m.action == "download" {
+	if m.action == download {
 
 	}
 }
