@@ -126,25 +126,25 @@ func handleMessage(conn net.Conn) {
 	m := Message.decode_message(receivedMessage) //convert JSON message into type Message
 
 	//identify the type of message it is and perform the corresponding action
-	if m.action == join {
+	if m.action == Join {
 		//get hostName and portNumber of the peer
 		//then connectPear is called to update status of this peer
 		connectPeer(m.HostName, m.PortNumber)
 	}
 
-	if m.action == leave {
+	if m.action == Leave {
 		//get hostName and portNumber of the peer
 		//then connectPear is called to update status of this peer
 		disconnectPeer(m.HostName, m.PortNumber)
 	}
 
-	if m.action == files {
+	if m.action == Files {
 		// update status..
 	}
-	if m.action == upload {
+	if m.action == Upload {
 
 	}
-	if m.action == download {
+	if m.action == Download {
 
 	}
 }
