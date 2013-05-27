@@ -109,6 +109,36 @@ func listenForMessages() {
 	}
 }
 
+//use this function to send message to a specified
+//host name and port number
+//note: HostName is for another peer and host is for the current peer
+func sendMessage(host HostName, port portNumber, msg []byte) {
+	//a lot of this is from that article Ahmed sent Anshika
+	ipAddresses []IP, err := LookupIP(host)
+	//if len(os.Args) != 2 {
+	//	fmt.Fprintf(os.Stderr, "Usage: %s host:port ", os.Args[0])
+	//	os.Exit(1)
+	//}
+	service := os.Args[1]
+
+	service = net.TCPAddr{IP: ipAddresses[0], Port: port}
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
+	//checkError(err)
+	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	//checkError(err)
+	_, err = conn.Write(msg)
+	//checkError(err)
+	result, err := ioutil.ReadAll(conn)
+	//checkError(err)
+	fmt.Println(string(result))
+	//os.Exit(0)
+
+
+	func DialTCP(net string, laddr, raddr *TCPAddr) (c *TCPConn, err os.Error)
+
+	func (c *TCPConn) Write(msg) (int, error)
+}
+
 // handle a message from a peer
 func handleMessage(conn net.Conn) {
 
