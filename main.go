@@ -145,37 +145,33 @@ func handleMessage(conn net.Conn) {
 	defer conn.Close()
 
 	//read up to headerSize bytes
-	receivedMessage = make([]byte, HeaderSize)
+	jsonMessage = make([]byte, HeaderSize)
 	for {
-		n, err := conn.Read(receivedMessage[0:])
+		n, err := conn.Read(message[0:])
 		if err != nil {
 			return
 		}
 	}
 
-	m := Message.decode_message(receivedMessage) //convert JSON message into type Message
+	message := Message.decodeMessage(jsonMessage) //convert JSON message into type Message
 
 	//identify the type of message it is and perform the corresponding action
-	if m.action == Join {
-		//get hostName and portNumber of the peer
-		//then connectPear is called to update status of this peer
-		connectPeer(m.HostName, m.PortNumber)
-	}
+	select {
+	case message.action == Join:
+		connectPeer(message.hostName, message.portNumber)
+		sendFileList(message.hostName, message.portNumber)
 
-	if m.action == Leave {
-		//get hostName and portNumber of the peer
-		//then connectPear is called to update status of this peer
-		disconnectPeer(m.HostName, m.PortNumber)
-	}
+	case message.action == Leave:
+		disconnectPeer(message.hostName, message.portNumber)
 
-	if m.action == Files {
-		// update status..
-	}
-	if m.action == Upload {
+	case message.action == Files:
+		updateStatus(message.files)
 
-	}
-	if m.action == Download {
+	case message.action == Upload:
+		sendFile(message.hostName, message.portNumber, message.files[0])
 
+	case m.action == Download:
+		downloadFile(message.files[0], conn)
 	}
 }
 
