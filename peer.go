@@ -23,14 +23,22 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	filelist []File  := nil //shouldn't be nil, need to create the list of files here
+	var filelist []File = makeFileList() //shouldn't be nil, need to create the list of files here
 	//create the message to join
-	joinMessage:= create_message(peer.host, string(peer.port), 1, fileList)
+	joinMessage := encodeMessage(peer.host, peer.port, Join, fileList)
+	// send out join message to all peers with your file list whose status are connected or unkown
+	//for each peer in the current peer's peers list
+	for _, p := range peer.peers.peers {
+		if !(p.host == peer.host && p.port == peer.port) {
+			//the peer being checked is not itself
+			if p.currentState != Disconnected { //if the peer's status is connected or unknown
+				//send message to connect to that specific peer at its host and port number
+				sendMessage(p.host, p.port, joinMessage)
+			}
+		}
+	}
 
-
-	// send out join message to all peers with your file list
-
-	//why do this explicity?
+	//need to do still?
 	//if we get a response in time, set status to connected
 	//peers.connectPeer(host, port)
 	// else if they don't respond in time, set their status to
