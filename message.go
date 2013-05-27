@@ -9,15 +9,16 @@ type Message struct {
 
 func encodeMessage(hostName string, portNumber int, action int, files []File) []byte {
 	message := Message{
-		hostName:   hostName,   //hostName = 32bits
-		portNumber: portNumber, //portNumber = 16 bits
-		action:     action,     //store the action as a string or an int? action = 3 to 4 bits?
+		hostName:   hostName,
+		portNumber: portNumber,
+		action:     action,
 		files:      files,
 	}
 	jsonMessage, err := json.Marshal(message)
 
 	//add padding to the message
-	if len(jsonMessage) < HeaderSize {
+	if action == Upload {
+		// make len(jsonMessage) = HeaderSize
 
 	}
 
