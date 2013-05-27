@@ -69,11 +69,13 @@ _Each peer will then update the status of the files it has, and send out request
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
   "action": "download",
-  "file":
-    {
-      "fileName": "<fileName>",
-      "chunks": [<chunkNumber>]
-    }
+  "files":
+    [
+      {
+        "fileName": "<fileName>",
+        "chunks": [<chunkNumber>]
+      }
+    ]
 }
 ```
 
@@ -83,10 +85,17 @@ _Each peer will then update the status of the files it has, and send out request
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
   "action": "upload",
-  "file":
-    {
-      "fileName": "<fileName>",
-      "chunks": [<chunkNumber>]
-    }
+  "files":
+    [
+      {
+        "fileName": "<fileName>",
+        "chunks": [<chunkNumber>]
+      }
+    ]
 }
 ```
+
+* * *
+
+_Incomplete files are saved with their chunk number in the name_
+.<fileName>:<chunkNumber>

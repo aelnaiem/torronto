@@ -27,3 +27,7 @@ func (status Status) MinimumReplicationLevel(fileNumber int) int {
 func (status Status) AverageReplicationLevel(fileNumber int) float32 {
 	// code
 }
+
+func updateStatus(files []File) {
+
+}
