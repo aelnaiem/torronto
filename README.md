@@ -98,4 +98,4 @@ _Each peer will then update the status of the files it has, and send out request
 * * *
 
 _Incomplete files are saved with their chunk number in the name_
-.<fileName>:<chunkNumber>
+.`<fileName>:<chunkNumber>`

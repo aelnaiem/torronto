@@ -53,32 +53,32 @@ func (peers Peers) Initialize(peersFile String) int {
 	}
 }
 
-func (peers Peers) GetPeer(i int) Peer {
-	return peers[i]
+// GetPeer should probably take a hostName and portNumber
+func (peers Peers) GetPeer(hostName string, portNumber int) (Peer, error) {
+	for _, peer := range peers {
+		if peer.host == hostName && peer.port == portNumber {
+			return peer, nil
+		}
+	}
+	return nil, errors.New("invalid host and port")
 }
 
 func (peers Peers) Visit(i int) {
 	// not sure what this is for...
 }
 
-func (peers Peers) connectPeer(hostName string, portNumber int) {
-	//for each entry in peers []Peer, find the one with this hostName
-	//and portNumber and change status to Connected
-	for _, peer := range peers {
-		if peer.host == hostName && peer.port == portNumber {
-			peer.currentState = Connected
-			break
-		}
+func (peers Peers) ConnectPeer(hostName string, portNumber int) {
+	peer, err = GetPeer(hostName, portNumber)
+	if err != nil {
+		// couldn't find peer
 	}
+	peer.currentState = Connected
 }
 
-func (peers Peers) disconnectPeer(hostName string, portNumber int) {
-	//for each entry in peers []Peer, find the one with this hostName
-	//and portNumber and change status to Disconnected
-	for _, peer := range peers {
-		if peer.host == hostName && peer.port == portNumber {
-			peer.currentState = Disconnected
-			break
-		}
+func (peers Peers) DisconnectPeer(hostName string, portNumber int) {
+	peer, err = GetPeer(hostName, portNumber)
+	if err != nil {
+		// couldn't find peer
 	}
+	peer.currentState = Disconnected
 }

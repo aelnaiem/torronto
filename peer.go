@@ -23,32 +23,22 @@ func (peer Peer) Query(status Status) int {
 }
 
 func (peer Peer) Join() int {
-	var filelist []File = makeFileList() //shouldn't be nil, need to create the list of files here
-	//create the message to join
-	joinMessage := encodeMessage(peer.host, peer.port, Join, fileList)
-	// send out join message to all peers with your file list whose status are connected or unkown
-	//for each peer in the current peer's peers list
-	for _, p := range peer.peers.peers {
-		if !(p.host == peer.host && p.port == peer.port) {
-			//the peer being checked is not itself
-			if p.currentState != Disconnected { //if the peer's status is connected or unknown
-				//send message to connect to that specific peer at its host and port number
-				sendMessage(p.host, p.port, joinMessage)
-			}
-		}
-	}
+	// get local fileList (maybe from status object?)
+	var fileList []File = makeFileList()
 
-	//need to do still?
-	//if we get a response in time, set status to connected
-	//peers.connectPeer(host, port)
-	// else if they don't respond in time, set their status to
-	//peers.disconnectPeer(host, port)
+	//create the message to join (add a timeout?)
+	joinMessage := encodeMessage(peer.host, peer.port, Join, fileList)
+	sendToAll(joinMessage)
 }
 
 func (peer Peer) Leave() int {
 	// push out unique chunks, least replicated first
+
+	// send out leave message
 	leaveMessage := encodeMessage(peer.host, peer.port, Leave)
-	// close all sockets
+	sendToAll(leaveMessage)
+
+	// close all sockets (only necessary if we keep connections open)
 }
 
 func sendFileList(hostName string, portNumber int) {
@@ -57,7 +47,7 @@ func sendFileList(hostName string, portNumber int) {
 	filesMessage := encodeMessage(peer.host, peer.port, Files, fileList)
 }
 
-func sendFile(hostName string, portNumber int, file File) {
+func uploadFile(hostName string, portNumber int, file File) {
 	fileList := [1]File{File}
 	filesMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
 
@@ -67,10 +57,11 @@ func sendFile(hostName string, portNumber int, file File) {
 }
 
 func downloadFile(file File, conn net.Conn) {
-
+	// check if we want to download the file and if we do:
 	// save the content to the file .(file.Name:file.chunks[0])
 
 	// if we have all the chunks, make the complete non-hidden file
+	// update the status object
 }
 
 const (
