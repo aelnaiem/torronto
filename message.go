@@ -16,10 +16,14 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 	}
 	jsonMessage, err := json.Marshal(message)
 
+	//add padding to the message
+	if len(jsonMessage) < HeaderSize {
+
+	}
+
 	return jsonMessage
 }
 
-//header size consists of hostName, portNumber and action
 func decodeMessage(jsonMessage []byte) Message {
 	var message Message
 	err := json.Unmarshal(jsonMessage, &message)
