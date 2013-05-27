@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// create status object
-	status := Status{}
+	HostStatus := Status{}
 
 	// join the network
 	peer.Join()
