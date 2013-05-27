@@ -7,35 +7,30 @@ type Message struct {
 	Files      []File
 }
 
-
-func create_message(hostName string, portNumber int, action int, files []File) []byte {
-
-	newinformation := Message{
-		HostName: hostName,		//hostName = 32bits
-		PortNumber: portNumber,	//portNumber = 16 bits
-		Action: action,			//store the action as a string or an int? action = 3 to 4 bits?
-		Files: files,
+func encodeMessage(hostName string, portNumber int, action int, files []File) []byte {
+	message := Message{
+		HostName:   hostName,   //hostName = 32bits
+		PortNumber: portNumber, //portNumber = 16 bits
+		Action:     action,     //store the action as a string or an int? action = 3 to 4 bits?
+		Files:      files,
 	}
-	newMessage, err := json.Marshal(newinformation)
+	jsonMessage, err := json.Marshal(message)
 
-	return newMessage
+	return jsonMessage
 }
 
 //header size consists of hostName, portNumber and action
+func decodeMessage(jsonMessage []byte) Message {
+	var message Message
+	err := json.Unmarshal(jsonMessage, &message)
 
-func decode_message(recdMessage []byte) Message {
-
-	var recd_json_message Message
-	err := json.Unmarshal(recdMessage, &recd_json_message)
-
-	return recd_json_message
-
+	return message
 }
 
 const (
-	Join  = iota
-	Leave = iota
-	Files = iota
-	Upload = iota
+	Join     = iota
+	Leave    = iota
+	Files    = iota
+	Upload   = iota
 	Download = iota
 )
