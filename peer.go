@@ -24,9 +24,9 @@ func (peer Peer) Query(status Status) int {
 
 func (peer Peer) Join() int {
 	filelist []File  := nil //shouldn't be nil, need to create the list of files here
-	//create the message to join 
+	//create the message to join
 	joinMessage:= create_message(peer.host, string(peer.port), 1, fileList)
-	
+
 
 	// send out join message to all peers with your file list
 
