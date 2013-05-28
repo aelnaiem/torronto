@@ -7,6 +7,7 @@ torronto - A BitTorrent Implementation in Go
 * add padding
 * error checking
 * update status and ask for missing files
+* add timeout
 
 ## Torronto Messaging Documentation
 * * *
