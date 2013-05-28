@@ -52,7 +52,7 @@ func main() {
 	peers := Peers{}
 	peers.initialize()
 
-	hostPeer = Peer{
+	HostPeer = Peer{
 		currentState: Connected,
 		peers:        peers,
 		host:         hostName,
@@ -77,7 +77,7 @@ func listenForQuery() {
 
 		inputArr := strings.Split(input, " ")
 		if strings.ToLower(inputArr[0]) == "query" {
-			hostPeer.Query(&status)
+			HostPeer.Query(&status)
 		}
 	}
 }
@@ -86,11 +86,8 @@ func listenForFiles() {
 	for {
 		select {
 		case ev := <-watcher.Event:
-			select {
-			case ev.IsCreate():
-				hostPeer.Insert(ev.Name)
-			case ev.IsDelete():
-				// not necessary... check
+			if ev.IsCreate() {
+				HostPeer.Insert(ev.Name)
 			}
 		case err := <-watcher.Error:
 			// error
@@ -104,7 +101,6 @@ func listenForMessages() {
 		if err != nil {
 			continue
 		}
-		// handle any new messages
 		go handleMessage(conn)
 	}
 }
@@ -131,8 +127,8 @@ func sendMessage(hostName string, portNumber string, msg []byte) {
 }
 
 func sendToAll(msg []byte) {
-	for _, peer := range peer.peers.peers {
-		if !(peer.host == hostPeer.host && peer.port == hostPeer.port) {
+	for _, peer := range HostPeer.peers.peers {
+		if !(peer.host == HostPeer.host && peer.port == HostPeer.port) {
 			if peer.currentState != Disconnected {
 				// add a timeout?
 				sendMessage(p.host, p.port, leaveMessage)
@@ -172,10 +168,10 @@ func handleMessage(conn net.Conn) {
 		updateStatus(message.files)
 
 	case message.action == Upload:
-		uploadFile(message.files[0], conn)
+		downloadFile(message.files[0], conn)
 
 	case message.action == Download:
-		downloadFile(message.hostName, message.portNumber, message.files[0])
+		uploadFile(message.hostName, message.portNumber, message.files[0])
 	}
 }
 
