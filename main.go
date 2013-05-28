@@ -108,8 +108,7 @@ func listenForMessages() {
 // use this function to send message to a specified host and port
 // might be better to connect to each peer only once, and keep track
 // of open connections, rather than dialing every times?
-func sendMessage(hostName string, portNumber string, msg []byte) {
-	// possibly want to add timeouts?
+func sendMessage(hostName string, portNumber string, msg []byte, timeout bool) {
 	ipAddresses, err := LookupIP(hostName)
 	service := os.Args[1]
 
@@ -126,12 +125,11 @@ func sendMessage(hostName string, portNumber string, msg []byte) {
 	conn.Close()
 }
 
-func sendToAll(msg []byte) {
+func sendToAll(msg []byte, timeout bool) {
 	for _, peer := range HostPeer.peers.peers {
 		if !(peer.host == HostPeer.host && peer.port == HostPeer.port) {
 			if peer.currentState != Disconnected {
-				// add a timeout?
-				sendMessage(p.host, p.port, leaveMessage)
+				sendMessage(p.host, p.port, msg, timeout)
 			}
 		}
 	}
