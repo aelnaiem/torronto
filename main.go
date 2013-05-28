@@ -112,6 +112,8 @@ func sendMessage(hostName string, portNumber string, msg []byte, timeout bool) {
 	ipAddresses, err := LookupIP(hostName)
 	service := os.Args[1]
 
+	// TODO: add timeout if timeout
+
 	service = net.TCPAddr{IP: ipAddresses[0], Port: port}
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
 	checkError(err)
