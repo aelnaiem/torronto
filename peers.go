@@ -22,8 +22,8 @@ func (peers Peers) Initialize(peersFile String) int {
 		// too many peers, should exit?
 	}
 
-	peers = make([]Peer, len(lines))
-	numPeers = 0
+	peers.peers = make([]Peer, len(lines))
+	peers.numPeers = 0
 
 	for i, line := range lines {
 		// create a new peer and add it to the peers array and increment
@@ -44,18 +44,18 @@ func (peers Peers) Initialize(peersFile String) int {
 			// portNumber given was not an integer, exit?
 		}
 
-		peers[i] = Peer{
+		peers.peers[i] = Peer{
 			currentState: Unknown,
 			host:         hostName,
 			port:         portNumber,
 		}
-		numPeers++
+		peers.numPeers++
 	}
 }
 
 // GetPeer should probably take a hostName and portNumber
 func (peers Peers) GetPeer(hostName string, portNumber int) (Peer, error) {
-	for _, peer := range peers {
+	for _, peer := range peers.peers {
 		if peer.host == hostName && peer.port == portNumber {
 			return peer, nil
 		}
@@ -68,7 +68,7 @@ func (peers Peers) Visit(i int) {
 }
 
 func (peers Peers) ConnectPeer(hostName string, portNumber int) {
-	peer, err = GetPeer(hostName, portNumber)
+	peer, err = peers.GetPeer(hostName, portNumber)
 	if err != nil {
 		// couldn't find peer
 	}
@@ -76,7 +76,7 @@ func (peers Peers) ConnectPeer(hostName string, portNumber int) {
 }
 
 func (peers Peers) DisconnectPeer(hostName string, portNumber int) {
-	peer, err = GetPeer(hostName, portNumber)
+	peer, err = peers.GetPeer(hostName, portNumber)
 	if err != nil {
 		// couldn't find peer
 	}

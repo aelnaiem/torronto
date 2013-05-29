@@ -52,7 +52,7 @@ func main() {
 	peers := Peers{}
 	peers.initialize()
 
-	hostPeer = Peer{
+	HostPeer = Peer{
 		currentState: Connected,
 		peers:        peers,
 		host:         hostName,
@@ -77,7 +77,7 @@ func listenForQuery() {
 
 		inputArr := strings.Split(input, " ")
 		if strings.ToLower(inputArr[0]) == "query" {
-			hostPeer.Query(&status)
+			HostPeer.Query(&status)
 		}
 	}
 }
@@ -86,11 +86,8 @@ func listenForFiles() {
 	for {
 		select {
 		case ev := <-watcher.Event:
-			select {
-			case ev.IsCreate():
-				hostPeer.Insert(ev.Name)
-			case ev.IsDelete():
-				// not necessary... check
+			if ev.IsCreate() {
+				HostPeer.Insert(ev.Name)
 			}
 		case err := <-watcher.Error:
 			// error
@@ -104,7 +101,6 @@ func listenForMessages() {
 		if err != nil {
 			continue
 		}
-		// handle any new messages
 		go handleMessage(conn)
 	}
 }
@@ -112,10 +108,11 @@ func listenForMessages() {
 // use this function to send message to a specified host and port
 // might be better to connect to each peer only once, and keep track
 // of open connections, rather than dialing every times?
-func sendMessage(hostName string, portNumber string, msg []byte) {
-	// possibly want to add timeouts?
+func sendMessage(hostName string, portNumber string, msg []byte, timeout bool) {
 	ipAddresses, err := LookupIP(hostName)
 	service := os.Args[1]
+
+	// TODO: add timeout if timeout
 
 	service = net.TCPAddr{IP: ipAddresses[0], Port: port}
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
@@ -130,12 +127,11 @@ func sendMessage(hostName string, portNumber string, msg []byte) {
 	conn.Close()
 }
 
-func sendToAll(msg []byte) {
-	for _, peer := range peer.peers.peers {
-		if !(peer.host == hostPeer.host && peer.port == hostPeer.port) {
+func sendToAll(msg []byte, timeout bool) {
+	for _, peer := range HostPeer.peers.peers {
+		if !(peer.host == HostPeer.host && peer.port == HostPeer.port) {
 			if peer.currentState != Disconnected {
-				// add a timeout?
-				sendMessage(p.host, p.port, leaveMessage)
+				sendMessage(p.host, p.port, msg, timeout)
 			}
 		}
 	}
@@ -172,10 +168,10 @@ func handleMessage(conn net.Conn) {
 		updateStatus(message.files)
 
 	case message.action == Upload:
-		uploadFile(message.files[0], conn)
+		downloadFile(message.files[0], conn)
 
 	case message.action == Download:
-		downloadFile(message.hostName, message.portNumber, message.files[0])
+		uploadFile(message.hostName, message.portNumber, message.files[0])
 	}
 }
 
