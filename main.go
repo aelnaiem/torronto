@@ -52,7 +52,7 @@ func main() {
 	peers := Peers{}
 	peers.initialize()
 
-	hostPeer = Peer{
+	HostPeer = Peer{
 		currentState: Connected,
 		peers:        peers,
 		host:         hostName,
@@ -77,7 +77,7 @@ func listenForQuery() {
 
 		inputArr := strings.Split(input, " ")
 		if strings.ToLower(inputArr[0]) == "query" {
-			hostPeer.Query(&status)
+			HostPeer.Query(&status)
 		}
 	}
 }
@@ -86,11 +86,8 @@ func listenForFiles() {
 	for {
 		select {
 		case ev := <-watcher.Event:
-			select {
-			case ev.IsCreate():
-				hostPeer.Insert(ev.Name)
-			case ev.IsDelete():
-				// not necessary...
+			if ev.IsCreate() {
+				HostPeer.Insert(ev.Name)
 			}
 		case err := <-watcher.Error:
 			// error
@@ -104,8 +101,39 @@ func listenForMessages() {
 		if err != nil {
 			continue
 		}
-		// handle any new messages
 		go handleMessage(conn)
+	}
+}
+
+// use this function to send message to a specified host and port
+// might be better to connect to each peer only once, and keep track
+// of open connections, rather than dialing every times?
+func sendMessage(hostName string, portNumber string, msg []byte, timeout bool) {
+	ipAddresses, err := LookupIP(hostName)
+	service := os.Args[1]
+
+	// TODO: add timeout if timeout
+
+	service = net.TCPAddr{IP: ipAddresses[0], Port: port}
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
+	checkError(err)
+
+	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	checkError(err)
+
+	_, err = conn.Write(msg)
+	checkError(err)
+
+	conn.Close()
+}
+
+func sendToAll(msg []byte, timeout bool) {
+	for _, peer := range HostPeer.peers.peers {
+		if !(peer.host == HostPeer.host && peer.port == HostPeer.port) {
+			if peer.currentState != Disconnected {
+				sendMessage(p.host, p.port, msg, timeout)
+			}
+		}
 	}
 }
 
@@ -115,42 +143,39 @@ func handleMessage(conn net.Conn) {
 	defer conn.Close()
 
 	//read up to headerSize bytes
-	receivedMessage = make([]byte, HeaderSize)
+	jsonMessage = make([]byte, HeaderSize)
 	for {
-		n, err := conn.Read(receivedMessage[0:])
+		n, err := conn.Read(message[0:])
 		if err != nil {
 			return
 		}
 	}
 
-	m := Message.decode_message(receivedMessage) //convert JSON message into type Message
+	// convert JSON message into type Message
+	message := Message.decodeMessage(jsonMessage)
 
-	//identify the type of message it is and perform the corresponding action
-	if m.action == Join {
-		//get hostName and portNumber of the peer
-		//then connectPear is called to update status of this peer
-		connectPeer(m.HostName, m.PortNumber)
-	}
+	// identify the type of message and act appropriately
+	select {
+	case message.action == Join:
+		connectPeer(message.hostName, message.portNumber)
+		sendFileList(message.hostName, message.portNumber)
 
-	if m.action == Leave {
-		//get hostName and portNumber of the peer
-		//then connectPear is called to update status of this peer
-		disconnectPeer(m.HostName, m.PortNumber)
-	}
+	case message.action == Leave:
+		disconnectPeer(message.hostName, message.portNumber)
 
-	if m.action == Files {
-		// update status..
-	}
-	if m.action == Upload {
+	case message.action == Files:
+		connectPeer(message.hostName, message.portNumber)
+		updateStatus(message.files)
 
-	}
-	if m.action == Download {
+	case message.action == Upload:
+		downloadFile(message.files[0], conn)
 
+	case message.action == Download:
+		uploadFile(message.hostName, message.portNumber, message.files[0])
 	}
 }
 
-// Possibly use a check error function to handle the many different
-// communication errors that can happen
+// handle the many different communication errors that can happen
 func checkError(err error) {
 	if err != nil {
 		// error handling
