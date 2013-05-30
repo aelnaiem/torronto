@@ -16,10 +16,19 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 	}
 	jsonMessage, err := json.Marshal(message)
 
-	//TODO: add padding to the message
+	//adds padding to message to make sure length = headerSize
 	if action == Upload {
-		// make len(jsonMessage) = HeaderSize
-
+		//make a new array tempMessage with the desired length
+		tempMessage := make([]byte, headerSize, headerSize)
+		//copy contents of jsonMessage into tempMessage
+		//if len(jsonMessage) < len(tempMessage) then padding of 0s is added
+		//if len(jsonMessage) ? len(tempMessage) then only headerSize number of elements
+		//are copied over to tempMessage
+		copy(tempMessage, jsonMessage)
+		//make jsonMessage equals to the new array since this will be returned
+		jsonMessage = tempMessage
+		//use the len(jsonMessage) and cap(jsonMessage) functions to
+		//determine these values
 	}
 
 	return jsonMessage
