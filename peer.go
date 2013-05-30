@@ -50,6 +50,7 @@ func (peer Peer) Insert(filename String) int {
 		}
 		fileList := [1]File{f}
 		uploadMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
+
 		// TODO: append content to uploadmessage
 
 		sendMessage(hostName, portNumber, uploadMessage, false)
@@ -90,13 +91,14 @@ func downloadFile(file File, conn net.Conn) {
 	// check if we want to download the file and if we do:
 	if f, ok := HostStatus.files[file.fileName]; ok {
 		if f.chunks[file.chunkNumber[0]] {
-			// we already have the file, TODO: return?
+			// we already have the file, TODO: close connection? return?
 		}
 	}
 	// TODO: save the content to the file by following
 	// the path in the file name (file.Name:file.chunks[0])
 
-	// TODO: update the status object updateStatus([f])
+	// update the status object
+	HostStatus.files[file.filename].chunks[file.chunkNumber[0]] = 1
 
 	// TODO: if we now have all the chunks, make the complete non-hidden file
 }

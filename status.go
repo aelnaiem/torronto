@@ -34,9 +34,9 @@ func (status Status) getFileList() []File {
 }
 
 func updateStatus([]File) {
-	// update the status based on the files
+	// TODO: update the status based on the files
 
-	// send requests for the files we don't have (download request)
+	// TODO: send requests for the files we don't have (download request)
 		f = File{
 			filename: filename,
 			chunks:   [1]int{chunk},
