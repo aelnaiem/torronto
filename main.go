@@ -109,16 +109,21 @@ func listenForMessages() {
 // might be better to connect to each peer only once, and keep track
 // of open connections, rather than dialing every times?
 func sendMessage(hostName string, portNumber string, msg []byte, timeout bool) {
-	ipAddresses, err := LookupIP(hostName)
-	service := os.Args[1]
 
-	// TODO: add timeout if timeout
+	//TCP address created based on hostName and portNumber
+	ipAddresses, err := LookupIP(hostName)
+	//service := os.Args[1]
 
 	service = net.TCPAddr{IP: ipAddresses[0], Port: port}
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
 	checkError(err)
 
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	//saw these two lines of code online for adding a timeout
+	//for read and write but not sure if it works completely
+	var conn TCPConn
+	err = conn.SetDeadline(time.Now().Add(timeout))
+	conn, err = net.DialTCP("tcp", nil, tcpAddr)
+
 	checkError(err)
 
 	_, err = conn.Write(msg)
