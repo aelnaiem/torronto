@@ -1,6 +1,8 @@
 package torronto
 
 import (
+	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,35 +15,37 @@ type File struct {
 
 func addLocalFile(path string, info os.FileInfo, err error) error {
 	if strings.Contains(path, ":") {
-		fileData := strings.Split(string(path), ":")
-		fileName, chunkNumber, err := fileData[0], Atoi(fileData[1])
+		var fileName string
+		var chunkNumber int
+		_, err := fmt.Sscanf(path, "%s:%d", &fileName, &chunkNumber)
 		if err != nil {
 			// error
 		}
 
-		if file, ok := HostStatus.files[fileName]; ok {
+		if file, ok := hostStatus.files[fileName]; ok {
 			file.chunks[chunkNumber] = 1
 		} else {
 			// return error
 		}
 	} else {
-		numberOfChunks = int(math.Ceil(info.size / ChunkSize))
-		chunks = make([]bool, numberOfChunks)
+		numberOfChunks := int(math.Ceil(float64(info.Size()) / ChunkSize))
+		chunks := make([]int, numberOfChunks)
 		for _, chunk := range chunks {
 			chunk = 1
 		}
 
-		newFile = File{
-			fileName: fileString,
+		newFile := File{
+			fileName: path,
 			chunks:   chunks,
 		}
-		HostStatus.files[path] = newFile
-		HostStatus.numFiles++
+		hostStatus.files[path] = newFile
+		hostStatus.numFiles++
 	}
+	return nil
 }
 
 func makeFileList() {
-	err := filepath.Walk("files", addFile)
+	err := filepath.Walk("files", addLocalFile)
 	if err != nil {
 		// error
 	}
