@@ -128,7 +128,9 @@ func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
 	//saw these two lines of code online for adding a timeout
 	//for read and write but not sure if it works completely
 	var conn *net.TCPConn
-	err = conn.SetDeadline(time.Now().Add(Timeout))
+	if hasTimeout == true {
+		err = conn.SetDeadline(time.Now().Add(Timeout))
+	}
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 
 	_, err = conn.Write(msg)
