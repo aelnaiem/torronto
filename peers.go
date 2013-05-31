@@ -63,10 +63,6 @@ func (peers Peers) GetPeer(hostName string, portNumber int) (Peer, error) {
 	return nil, errors.New("invalid host and port")
 }
 
-func (peers Peers) Visit(i int) {
-	// not sure what this is for...
-}
-
 func (peers Peers) ConnectPeer(hostName string, portNumber int) {
 	peer, err = peers.GetPeer(hostName, portNumber)
 	if err != nil {

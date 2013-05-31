@@ -109,22 +109,37 @@ func listenForMessages() {
 // might be better to connect to each peer only once, and keep track
 // of open connections, rather than dialing every times?
 func sendMessage(hostName string, portNumber string, msg []byte, timeout bool) {
-	ipAddresses, err := LookupIP(hostName)
-	service := os.Args[1]
 
-	// TODO: add timeout if timeout
+	//TCP address created based on hostName and portNumber
+	ipAddresses, err := LookupIP(hostName)
+	//service := os.Args[1]
 
 	service = net.TCPAddr{IP: ipAddresses[0], Port: port}
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
 	checkError(err)
 
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	checkError(err)
+	//saw these two lines of code online for adding a timeout
+	//for read and write but not sure if it works completely
+	var conn TCPConn
+	err = conn.SetDeadline(time.Now().Add(timeout))
+	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 
+	//if err, ok := err.(net.Error); ok && neterr.Timeout() {
 	_, err = conn.Write(msg)
-	checkError(err)
-
+	//checkError(err)
+	if err == io.EOF {
+		//detected closed LAN connection
+		//message not sent
+	}
+	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+		//timout occurred
+		//now what? do we give a timout error message or try
+		//to resend it? or return a code to indicate that it should send
+		//the message elsewhere?
+	}
+	//for now we close the connection after the attempt to send message
 	conn.Close()
+	conn = nil
 }
 
 func sendToAll(msg []byte, timeout bool) {
