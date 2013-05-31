@@ -8,7 +8,7 @@ import (
 
 type File struct {
 	fileName string
-	chunks   []bool
+	chunks   []int
 }
 
 func addLocalFile(path string, info os.FileInfo, err error) error {
@@ -20,7 +20,7 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 		}
 
 		if file, ok := HostStatus.files[fileName]; ok {
-			file.chunks[chunkNumber] = true
+			file.chunks[chunkNumber] = 1
 		} else {
 			// return error
 		}
@@ -28,7 +28,7 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 		numberOfChunks = int(math.Ceil(info.size / ChunkSize))
 		chunks = make([]bool, numberOfChunks)
 		for _, chunk := range chunks {
-			chunk = true
+			chunk = 1
 		}
 
 		newFile = File{
