@@ -3,12 +3,16 @@ package torronto
 import (
 	"fmt"
 	"github.com/howeyc/fsnotify"
-	"io/ioutil"
-	"json"
+	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
+
+var hostPeer Peer
+var hostStatus Status
 
 func main() {
 	if len(os.Args) != 2 {
@@ -16,10 +20,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	var hostName string
+	var portNumber int
+
 	addr := os.Args[1]
-	addrArr := strings.Split(addr, ':')
-	hostName, portNumber, err := addrAddr[0], Atoi(addrArr[1])
-	if len(peerData) != 2 {
+	_, err := fmt.Sscanf(addr, "%s %d", &hostName, &portNumber)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
 		os.Exit(1)
 	}
@@ -46,13 +52,13 @@ func main() {
 	}
 
 	// listen for messages?
-	go listenForMessages()
+	go listenForMessages(listener)
 
 	// instantiate peer and join network
 	peers := Peers{}
-	peers.initialize()
+	peers.initialize("peerList")
 
-	HostPeer = Peer{
+	hostPeer = Peer{
 		currentState: Connected,
 		peers:        peers,
 		host:         hostName,
@@ -60,10 +66,13 @@ func main() {
 	}
 
 	// create status object
-	HostStatus := Status{}
+	hostStatus = Status{
+		numFiles: 0,
+		files:    make(map[string]File),
+	}
 
 	// join the network
-	peer.Join()
+	hostPeer.Join()
 }
 
 // Listen for user input to stdin
@@ -77,25 +86,29 @@ func listenForQuery() {
 
 		inputArr := strings.Split(input, " ")
 		if strings.ToLower(inputArr[0]) == "query" {
-			HostPeer.Query(&status)
+			hostPeer.Query(&hostStatus)
 		}
 	}
 }
 
 func listenForFiles() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		// error
+	}
 	for {
 		select {
 		case ev := <-watcher.Event:
 			if ev.IsCreate() {
-				HostPeer.Insert(ev.Name)
+				hostPeer.Insert(ev.Name)
 			}
 		case err := <-watcher.Error:
-			// error
+			print(err)
 		}
 	}
 }
 
-func listenForMessages() {
+func listenForMessages(listener *net.TCPListener) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -108,45 +121,30 @@ func listenForMessages() {
 // use this function to send message to a specified host and port
 // might be better to connect to each peer only once, and keep track
 // of open connections, rather than dialing every times?
-func sendMessage(hostName string, portNumber string, msg []byte, timeout bool) {
-
-	//TCP address created based on hostName and portNumber
-	ipAddresses, err := LookupIP(hostName)
-	//service := os.Args[1]
-
-	service = net.TCPAddr{IP: ipAddresses[0], Port: port}
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
+func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
+	addr := []string{hostName, strconv.Itoa(portNumber)}
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", strings.Join(addr, ":"))
 	checkError(err)
 
 	//saw these two lines of code online for adding a timeout
 	//for read and write but not sure if it works completely
-	var conn TCPConn
-	err = conn.SetDeadline(time.Now().Add(timeout))
+	var conn *net.TCPConn
+	err = conn.SetDeadline(time.Now().Add(Timeout))
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 
-	//if err, ok := err.(net.Error); ok && neterr.Timeout() {
 	_, err = conn.Write(msg)
-	//checkError(err)
-	if err == io.EOF {
-		//detected closed LAN connection
-		//message not sent
-	}
-	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-		//timout occurred
-		//now what? do we give a timout error message or try
-		//to resend it? or return a code to indicate that it should send
-		//the message elsewhere?
-	}
+	checkError(err)
+
 	//for now we close the connection after the attempt to send message
 	conn.Close()
 	conn = nil
 }
 
 func sendToAll(msg []byte, timeout bool) {
-	for _, peer := range HostPeer.peers.peers {
-		if !(peer.host == HostPeer.host && peer.port == HostPeer.port) {
+	for _, peer := range hostPeer.peers.peers {
+		if !(peer.host == hostPeer.host && peer.port == hostPeer.port) {
 			if peer.currentState != Disconnected {
-				sendMessage(p.host, p.port, msg, timeout)
+				sendMessage(peer.host, peer.port, msg, timeout)
 			}
 		}
 	}
@@ -158,41 +156,51 @@ func handleMessage(conn net.Conn) {
 	defer conn.Close()
 
 	//read up to headerSize bytes
-	jsonMessage = make([]byte, HeaderSize)
+	jsonMessage := make([]byte, HeaderSize)
 	for {
-		n, err := conn.Read(message[0:])
-		if err != nil {
-			return
-		}
+		n, err := conn.Read(jsonMessage[0:])
+		checkError(err)
+		print(n)
 	}
 
 	// convert JSON message into type Message
-	message := Message.decodeMessage(jsonMessage)
+	message := decodeMessage(jsonMessage)
 
 	// identify the type of message and act appropriately
-	select {
+	switch {
 	case message.action == Join:
-		connectPeer(message.hostName, message.portNumber)
-		sendFileList(message.hostName, message.portNumber)
+		hostPeer.peers.connectPeer(message.hostName, message.portNumber)
+		hostPeer.sendFileList(message.hostName, message.portNumber)
 
 	case message.action == Leave:
-		disconnectPeer(message.hostName, message.portNumber)
+		hostPeer.peers.disconnectPeer(message.hostName, message.portNumber)
 
 	case message.action == Files:
-		connectPeer(message.hostName, message.portNumber)
+		hostPeer.peers.connectPeer(message.hostName, message.portNumber)
 		updateStatus(message.files)
 
 	case message.action == Upload:
-		downloadFile(message.files[0], conn)
+		hostPeer.downloadFile(message.files[0], conn)
 
 	case message.action == Download:
-		uploadFile(message.hostName, message.portNumber, message.files[0])
+		hostPeer.uploadFile(message.hostName, message.portNumber, message.files[0])
 	}
 }
 
 // handle the many different communication errors that can happen
 func checkError(err error) {
 	if err != nil {
-		// error handling
+		if err == io.EOF {
+			//detected closed LAN connection
+			//message not sent
+		} else if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+			//timout occurred
+			//now what? do we give a timout error message or try
+			//to resend it? or return a code to indicate that it should send
+			//the message elsewhere?
+		} else {
+			// every other case
+		}
+
 	}
 }

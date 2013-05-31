@@ -1,5 +1,9 @@
 package torronto
 
+import (
+	"encoding/json"
+)
+
 type Message struct {
 	hostName   string
 	portNumber int
@@ -19,7 +23,7 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 	//adds padding to message to make sure length = headerSize
 	if action == Upload {
 		//make a new array tempMessage with the desired length
-		tempMessage := make([]byte, headerSize, headerSize)
+		tempMessage := make([]byte, HeaderSize, HeaderSize)
 		//copy contents of jsonMessage into tempMessage
 		//if len(jsonMessage) < len(tempMessage) then padding of 0s is added
 		//if len(jsonMessage) ? len(tempMessage) then only headerSize number of elements
