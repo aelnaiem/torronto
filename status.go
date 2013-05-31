@@ -26,9 +26,9 @@ func (status Status) AverageReplicationLevel(fileNumber int) float32 {
 }
 
 func (status Status) getFileList() []File {
-	fileList := []File
+	fileList := []File{}
 	for _, file := range status.files {
-		append(fileList, file)
+		fileList = append(fileList, file)
 	}
 	return fileList
 }
@@ -37,8 +37,8 @@ func updateStatus([]File) {
 	// TODO: update the status based on the files
 
 	// TODO: send requests for the files we don't have (download request)
-		f = File{
-			filename: filename,
-			chunks:   [1]int{chunk},
-		}
+	/*f := File{
+		fileName: filename,
+		chunks:   []int{chunk},
+	}*/
 }
