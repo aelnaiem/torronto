@@ -6,6 +6,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"path"
 )
 
 type Peer struct {
@@ -90,20 +91,50 @@ func (peer Peer) sendFileList(hostName string, portNumber int) {
 	sendMessage(hostName, portNumber, filesMessage, false)
 }
 
-func (peer Peer) downloadFile(file File, conn net.Conn) {
+func (peer Peer) downloadFile(file File, conn *net.Conn) { //points to that connection
 	// check if we want to download the file and if we do:
 	if f, ok := hostStatus.files[file.fileName]; ok {
 		if f.chunks[file.chunks[0]] == 1 {
 			// we already have the file, TODO: close connection? return?
 		}
 	}
-	// TODO: save the content to the file by following
-	// the path in the file name (file.Name:file.chunks[0])
+	//incorrect but we need to use TCPConn
+	var tcpCon *net.TCPConn = TCPConn(conn)
+	//unsure of the impact of setReadBuffer
+	if err = tcpCon.SetReadBuffer(ChunkSize); err != nil { //set read buffer
+		//error in setting read buffer size
+	}
+	readBuffer := make([]byte, ChunkSize)
+	if readData, err := tcpCon.Read(readBuffer); err != nil {
+		//error in reading from connection
+	}
+
+	dir, fileNameStr := Split(file.fileName)
+	basepath := path.Dir(dir)
+	filename := path.Base(fileNameStr)
+	//creates the directory if it's not already there
+	if os.MkdirAll(basepath, 0777) != nil {
+		//error: panic("Unable to create directory for tagfile!")
+	}
+
+	// Create the tagfile.
+	fileCreated, err := os.Create(path.Join([]string{basepath, filename}))
+	//error check
+
+	var writeOffset int64
+	writeOffset = file.chunks[0] * ChunkSize
+	if numberOfBytesWritten, err := fileCreated.WriteAt(readData, writeOffset); err != nil {
+		//error check
+	}
+
+	//var walkFn WalkFunc{path:dir, info: nil, err: err }
+	//walkFn = WalkFunc{}	//WalkFunc func(path string, info os.FileInfo, err error) error
+	//set root
+	//err := Walk(root, walkFn)
+	//error check
 
 	// update the status object
 	hostStatus.files[file.fileName].chunks[file.chunks[0]] = 1
-
-	// TODO: if we now have all the chunks, make the complete non-hidden file
 }
 
 func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
@@ -112,11 +143,28 @@ func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
 		if f.chunks[file.chunks[0]] == 1 {
 			fileList := []File{file}
 			uploadMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
+		}
+		//incorrect but we need to use TCPConn
+		var tcpCon *net.TCPConn = TCPConn(conn)
+		//not sure of the impact of setWriteBuffer
 
-			//TODO:
-			// find the file and chunk in the directory, add it to the message and
-			// send .(file.fileName:file.chunks[0]) or chunk file.fileName to the
-			// appropriate part
+		if err = tcpCon.SetWriteBuffer(ChunkSize); err != nil { //set write buffer
+			//error in setting write buffer size
+		}
+		writeBuffer := make([]byte, ChunkSize)
+
+		var readOffset int64
+		readOffset = file.chunks[0] * ChunkSize
+
+		var fileReading *os.File
+		fileReading, err = Open(file.fileName)
+
+		if numberOfBytesRead, err := fileReading.ReadAt(writeBuffer, readOffset); err != nil {
+			//error check
+		}
+
+		if writeData, err := tcpCon.Write(writeBuffer); err != nil {
+			//error in reading from connection
 		}
 	}
 }
