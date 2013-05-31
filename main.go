@@ -122,8 +122,7 @@ func listenForMessages(listener *net.TCPListener) {
 // might be better to connect to each peer only once, and keep track
 // of open connections, rather than dialing every times?
 func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
-	addr := []string{hostName, strconv.Itoa(portNumber)}
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", strings.Join(addr, ":"))
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", JoinHostPort(hostName, strconv.Itoa(port)))
 	checkError(err)
 
 	//saw these two lines of code online for adding a timeout
