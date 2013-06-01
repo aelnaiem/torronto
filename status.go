@@ -43,26 +43,42 @@ func (status Status) getFileList() []File {
 }
 
 func updateHaveStatus(hostName string, portNumber int, file File) {
-	// TODO: check if peer exists in status object
-	// TODO: check if file exists in peers files and add it
+	fullName := join([]string{hostName, strconv.Itoa(portNumber)}, ":")
+
+	if p, ok := status.status[fullName]; !ok {
+		status.status[fullName] = peerStatus{
+			files: make(map[string]File),
+		}
+	}
+	if f, ok := status.status[fullName].files[f.fileName]; !ok {
+		chunks := make([]int, file.chunks[0])
+		for chunk := range chunks {
+			chunks[chunk] = 0
+		}
+		chunks[file.chunks[1]] = 1
+		status.status[fullName].files[f.fileName] = File{
+			fileName: file.fileName,
+			chunks:   chunks,
+		}
+	}
+	status.status[fullName].files[file.fileName].chunks[file.chunks[1]] = 1
 
 	// TODO: check if replication for that file exists and update it
+	// send request to download if we don't have the file
 }
 
 func updateStatus(hostName string, portNumber int, files []File) {
 	fullName := join([]string{hostName, strconv.Itoa(portNumber)}, ":")
 
-	// TODO: check if peer exists in status object
-	for _, file := range files {
-		// TODO: check if file exists in the files
-		if f, ok := status.status[fullName].files[file.fileName]; ok {
-			status.status[fullName].files[f.fileName].chunks = f.chunks
-			// TODO: check if replication for that file exists
-			for chunk := range f.chunks {
-				status.replication[f.fileName].chunks[chunk] += 1
-			}
+	if p, ok := status.status[fullName]; !ok {
+		status.status[fullName] = peerStatus{
+			files: make(map[string]File),
 		}
-		status.status[full]
+	}
+	for _, file := range files {
+		status.status[fullName].files[f.fileName] = f
+		// TODO: update replication of the file
+		// send request to download if we don't have the file
 	}
 }
 

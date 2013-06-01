@@ -87,7 +87,7 @@ func (peer Peer) sendFileList(hostName string, portNumber int) {
 
 func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	if f, ok := status.status["local"].files[file.fileName]; ok {
-		if f.chunks[file.chunks[0]] == 1 {
+		if f.chunks[file.chunks[1]] == 1 {
 			return
 		}
 	}
@@ -108,11 +108,11 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
-	writeOffset := int64(file.chunks[0] * ChunkSize)
+	writeOffset := int64(file.chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(readBuffer, writeOffset)
 	checkError(err)
 
-	status.status["local"].files[file.fileName].chunks[file.chunks[0]] = 1
+	status.status["local"].files[file.fileName].chunks[file.chunks[1]] = 1
 
 	fileList := []File{file}
 	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
@@ -123,12 +123,12 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 
 func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
 	if f, ok := status.status["local"].files[file.fileName]; ok {
-		if f.chunks[file.chunks[0]] == 1 {
+		if f.chunks[file.chunks[1]] == 1 {
 			fileList := []File{file}
 			uploadMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
 
 			writeBuffer := make([]byte, ChunkSize)
-			readOffset := int64(file.chunks[0] * ChunkSize)
+			readOffset := int64(file.chunks[1] * ChunkSize)
 			fileReading, err := os.Open(file.fileName)
 			_, err = fileReading.ReadAt(writeBuffer, readOffset)
 			checkError(err)
