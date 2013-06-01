@@ -36,10 +36,8 @@ func main() {
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	checkError(err)
 
-	// listen for status query
 	go listenForQuery()
 
-	// listen for files added to files folder
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		// error
@@ -51,10 +49,12 @@ func main() {
 		// error
 	}
 
+<<<<<<< HEAD
+=======
 	// listen for messages?
+>>>>>>> master
 	go listenForMessages(listener)
 
-	// instantiate peer and join network
 	peers := Peers{}
 	peers.initialize("peerList")
 
@@ -65,17 +65,22 @@ func main() {
 		port:         portNumber,
 	}
 
+<<<<<<< HEAD
+=======
 	// create status object
+>>>>>>> master
 	hostStatus = Status{
 		numFiles: 0,
 		files:    make(map[string]File),
 	}
 
+<<<<<<< HEAD
+=======
 	// join the network
+>>>>>>> master
 	hostPeer.Join()
 }
 
-// Listen for user input to stdin
 func listenForQuery() {
 	for {
 		var input string
@@ -110,7 +115,7 @@ func listenForFiles() {
 
 func listenForMessages(listener *net.TCPListener) {
 	for {
-		conn, err := listener.Accept()
+		conn, err := listener.AcceptTCP()
 		if err != nil {
 			continue
 		}
@@ -118,6 +123,16 @@ func listenForMessages(listener *net.TCPListener) {
 	}
 }
 
+<<<<<<< HEAD
+func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", net.JoinHostPort(hostName, strconv.Itoa(portNumber)))
+	checkError(err)
+
+	var conn *net.TCPConn
+	if hasTimeout == true {
+		err = conn.SetDeadline(time.Now().Add(Timeout)) //does this work?
+	}
+=======
 // use this function to send message to a specified host and port
 // might be better to connect to each peer only once, and keep track
 // of open connections, rather than dialing every times?
@@ -130,13 +145,18 @@ func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
 	//for read and write but not sure if it works completely
 	var conn *net.TCPConn
 	err = conn.SetDeadline(time.Now().Add(Timeout))
+>>>>>>> master
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 
 	_, err = conn.Write(msg)
 	checkError(err)
 
+<<<<<<< HEAD
+	conn.Close() //for now we close the connection after the attempt to send message
+=======
 	//for now we close the connection after the attempt to send message
 	conn.Close()
+>>>>>>> master
 	conn = nil
 }
 
@@ -150,12 +170,14 @@ func sendToAll(msg []byte, timeout bool) {
 	}
 }
 
-// handle a message from a peer
-func handleMessage(conn net.Conn) {
+func handleMessage(conn *net.TCPConn) {
 
 	defer conn.Close()
 
+<<<<<<< HEAD
+=======
 	//read up to headerSize bytes
+>>>>>>> master
 	jsonMessage := make([]byte, HeaderSize)
 	for {
 		n, err := conn.Read(jsonMessage[0:])
@@ -163,10 +185,15 @@ func handleMessage(conn net.Conn) {
 		print(n)
 	}
 
+<<<<<<< HEAD
+	message := decodeMessage(jsonMessage)
+
+=======
 	// convert JSON message into type Message
 	message := decodeMessage(jsonMessage)
 
 	// identify the type of message and act appropriately
+>>>>>>> master
 	switch {
 	case message.action == Join:
 		hostPeer.peers.connectPeer(message.hostName, message.portNumber)
@@ -187,7 +214,6 @@ func handleMessage(conn net.Conn) {
 	}
 }
 
-// handle the many different communication errors that can happen
 func checkError(err error) {
 	if err != nil {
 		if err == io.EOF {

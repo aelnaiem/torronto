@@ -6,23 +6,28 @@ type Status struct {
 }
 
 func (status Status) NumberofFiles() int {
-	// code
+	// TODO: code
+	return 0
 }
 
 func (status Status) FractionPresentLocally(fileNumber int) float32 {
-	// code
+	// TODO: code
+	return 0
 }
 
 func (status Status) FractionPresent(fileNumber int) float32 {
-	// code
+	// TODO: code
+	return 0
 }
 
 func (status Status) MinimumReplicationLevel(fileNumber int) int {
-	// code
+	// TODO: code
+	return 0
 }
 
 func (status Status) AverageReplicationLevel(fileNumber int) float32 {
-	// code
+	// TODO: code
+	return 0
 }
 
 func (status Status) getFileList() []File {
