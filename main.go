@@ -23,7 +23,7 @@ func main() {
 	var hostName string
 	var portNumber int
 	addr := os.Args[1]
-	_, err := fmt.Sscanf(addr, "%s %d", &hostName, &portNumber)
+	_, err := fmt.Sscanf(addr, "%s:%d", &hostName, &portNumber)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
 		os.Exit(1)

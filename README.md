@@ -2,6 +2,11 @@ torronto - A BitTorrent Implementation in Go
 ============================================
 ## TODO
 
+_Start testing_
+`go build`
+
+`./torronto <hostName>:<portNumber>`
+
 * error checking
 * ask for missing files
 * replication structure
