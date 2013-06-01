@@ -21,6 +21,7 @@ func (peer Peer) Insert(filename string) {
 	checkError(err)
 
 	addLocalFile(filename, info, nil)
+	// TODO: set status for all other peers for this file and update replication
 
 	file, err := os.Open(filename)
 	checkError(err)
