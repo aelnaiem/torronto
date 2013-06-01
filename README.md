@@ -2,11 +2,8 @@ torronto - A BitTorrent Implementation in Go
 ============================================
 ## TODO
 
-* sending out chunks
-* saving chunks
 * error checking
 * update status and ask for missing files
-* add timeout
 
 ## Torronto Messaging Documentation
 * * *

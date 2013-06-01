@@ -12,7 +12,7 @@ type Peers struct {
 	peers    []Peer
 }
 
-func (peers Peers) initialize(peersFile string) int {
+func (peers Peers) initialize(peersFile string) {
 	var hostName string
 	var portNumber int
 
@@ -33,7 +33,6 @@ func (peers Peers) initialize(peersFile string) int {
 		// create a new peer and add it to the peers array and increment
 		// the number of peers
 
-		// empty line occurs at the end of the file
 		if len(line) == 0 {
 			continue
 		}
@@ -50,9 +49,9 @@ func (peers Peers) initialize(peersFile string) int {
 		}
 		peers.numPeers++
 	}
+	return
 }
 
-// GetPeer should probably take a hostName and portNumber
 func (peers Peers) getPeer(hostName string, portNumber int) (Peer, error) {
 	for _, peer := range peers.peers {
 		if peer.host == hostName && peer.port == portNumber {
