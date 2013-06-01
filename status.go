@@ -1,8 +1,12 @@
 package torronto
 
 type Status struct {
-	numFiles int
-	files    map[string]File
+	status      map[string]peerStatus
+	replication map[string][]int
+}
+
+type peerStatus struct {
+	files map[string]File
 }
 
 func (status Status) NumberofFiles() int {
@@ -32,7 +36,7 @@ func (status Status) AverageReplicationLevel(fileNumber int) float32 {
 
 func (status Status) getFileList() []File {
 	fileList := []File{}
-	for _, file := range status.files {
+	for _, file := range status.status["local"].files {
 		fileList = append(fileList, file)
 	}
 	return fileList

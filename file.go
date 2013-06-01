@@ -18,11 +18,9 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 		var fileName string
 		var chunkNumber int
 		_, err := fmt.Sscanf(path, "%s:%d", &fileName, &chunkNumber)
-		if err != nil {
-			// error
-		}
+		checkError(err)
 
-		if file, ok := hostStatus.files[fileName]; ok {
+		if file, ok := status.status["local"].files[fileName]; ok {
 			file.chunks[chunkNumber] = 1
 		} else {
 			// return error
@@ -38,15 +36,13 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 			fileName: path,
 			chunks:   chunks,
 		}
-		hostStatus.files[path] = newFile
-		hostStatus.numFiles++
+		status.status["local"].files[path] = newFile
+		// TODO: set status for all other peers for this file and update replication
 	}
 	return nil
 }
 
 func makeFileList() {
 	err := filepath.Walk("files", addLocalFile)
-	if err != nil {
-		// error
-	}
+	checkError(err)
 }

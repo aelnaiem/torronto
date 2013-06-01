@@ -8,8 +8,7 @@ import (
 )
 
 type Peers struct {
-	numPeers int
-	peers    []Peer
+	peers []Peer
 }
 
 func (peers Peers) initialize(peersFile string) {
@@ -17,37 +16,27 @@ func (peers Peers) initialize(peersFile string) {
 	var portNumber int
 
 	content, err := ioutil.ReadFile("peersFile")
-	if err != nil {
-		// exit gracefully if the file is not found
-	}
+	checkError(err)
 
 	lines := strings.Split(string(content), "\n")
 	if len(lines) > MaxPeers {
-		// too many peers, should exit?
+		// TODO: either cut off extra list members or exit
 	}
 
 	peers.peers = make([]Peer, len(lines))
-	peers.numPeers = 0
-
 	for i, line := range lines {
-		// create a new peer and add it to the peers array and increment
-		// the number of peers
-
 		if len(line) == 0 {
 			continue
 		}
 
 		_, err := fmt.Sscanf(line, "%s %d", &hostName, &portNumber)
-		if err != nil {
-			// portNumber given was not an integer, exit?
-		}
+		checkError(err)
 
 		peers.peers[i] = Peer{
 			currentState: Unknown,
 			host:         hostName,
 			port:         portNumber,
 		}
-		peers.numPeers++
 	}
 	return
 }
@@ -58,21 +47,17 @@ func (peers Peers) getPeer(hostName string, portNumber int) (Peer, error) {
 			return peer, nil
 		}
 	}
-	return Peer{}, errors.New("invalid host and port")
+	return Peer{}, errors.New("Invalid host and/or port")
 }
 
 func (peers Peers) connectPeer(hostName string, portNumber int) {
 	peer, err := peers.getPeer(hostName, portNumber)
-	if err != nil {
-		// couldn't find peer
-	}
+	checkError(err)
 	peer.currentState = Connected
 }
 
 func (peers Peers) disconnectPeer(hostName string, portNumber int) {
 	peer, err := peers.getPeer(hostName, portNumber)
-	if err != nil {
-		// couldn't find peer
-	}
+	checkError(err)
 	peer.currentState = Disconnected
 }
