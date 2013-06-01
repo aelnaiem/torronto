@@ -42,12 +42,31 @@ func (status Status) getFileList() []File {
 	return fileList
 }
 
-func updateStatus([]File) {
-	// TODO: update the status based on the files
+func updateHaveStatus(hostName string, portNumber int, file File) {
+	// TODO: check if peer exists in status object
+	// TODO: check if file exists in peers files and add it
 
-	// TODO: send requests for the files we don't have (download request)
-	/*f := File{
-		fileName: filename,
-		chunks:   []int{chunk},
-	}*/
+	// TODO: check if replication for that file exists and update it
+}
+
+func updateStatus(hostName string, portNumber int, files []File) {
+	fullName := join([]string{hostName, strconv.Itoa(portNumber)}, ":")
+
+	// TODO: check if peer exists in status object
+	for _, file := range files {
+		// TODO: check if file exists in the files
+		if f, ok := status.status[fullName].files[file.fileName]; ok {
+			status.status[fullName].files[f.fileName].chunks = f.chunks
+			// TODO: check if replication for that file exists
+			for chunk := range f.chunks {
+				status.replication[f.fileName].chunks[chunk] += 1
+			}
+		}
+		status.status[full]
+	}
+}
+
+func trackNewFile(file File) {
+	status.status["local"].files[path] = file
+	status.replication[file.fileName] = file.chunks
 }

@@ -4,7 +4,7 @@ torronto - A BitTorrent Implementation in Go
 
 * error checking
 * update status and ask for missing files
-* add Have documentation
+* send out unique chunks when joining and leaving
 
 ## Torronto Messaging Documentation
 * * *
@@ -46,6 +46,22 @@ _When a joins the network, it send out a message that it's joining and a list of
 
 * * *
  _The peers respond with a file list._
+
+### Have a new file
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Have",
+  "files":
+    [
+      {
+        "fileName": "<fileName>",
+        "chunks": [<chunkNumber>]
+      }
+    ]
+}
+```
 
 ### Returning file list
 ```

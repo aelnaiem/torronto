@@ -1,9 +1,6 @@
 package torronto
 
 import (
-	"bufio"
-	"io"
-	"math"
 	"net"
 	"os"
 	"path"
@@ -16,14 +13,13 @@ type Peer struct {
 	port         int
 }
 
-func (peer Peer) Insert(filename string) {
-	info, err := os.Stat(filename)
+func (peer Peer) Insert(fileName string) {
+	info, err := os.Stat(fileName)
 	checkError(err)
 
-	addLocalFile(filename, info, nil)
-	// TODO: set status for all other peers for this file and update replication
+	addLocalFile(fileName, info, nil)
 
-	file, err := os.Open(filename)
+	file, err := os.Open(fileName)
 	checkError(err)
 
 	// TODO: why is this defered?
@@ -51,7 +47,7 @@ func (peer Peer) Insert(filename string) {
 	// 	}
 
 	// 	f := File{
-	// 		fileName: filename,
+	// 		fileName: fileName,
 	// 		chunks:   []int{chunk},
 	// 	}
 	// 	fileList := []File{f}
@@ -60,14 +56,14 @@ func (peer Peer) Insert(filename string) {
 	// }
 }
 
-func (peer Peer) Query(status *Status) {
+func (peer Peer) Query() {
 	// TODO: print out status of files
 	return
 }
 
 func (peer Peer) Join() {
 	makeFileList()
-	fileList := status.status["local"].getFileList()
+	fileList := status.getFileList()
 
 	joinMessage := encodeMessage(peer.host, peer.port, Join, fileList)
 	sendToAll(joinMessage, true)
@@ -83,7 +79,7 @@ func (peer Peer) Leave() {
 }
 
 func (peer Peer) sendFileList(hostName string, portNumber int) {
-	fileList := status.status["local"].getFileList()
+	fileList := status.getFileList()
 	filesMessage := encodeMessage(peer.host, peer.port, Files, fileList)
 	sendMessage(hostName, portNumber, filesMessage, false)
 	return
@@ -96,28 +92,32 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 		}
 	}
 
-	_, err := tcpConn.SetReadBuffer(ChunkSize)
+	err := tcpConn.SetReadBuffer(ChunkSize)
 	checkError(err)
 
 	readBuffer := make([]byte, ChunkSize)
-	readBytes, err := tcpConn.Read(readBuffer)
+	_, err = tcpConn.Read(readBuffer)
 	checkError(err)
 
 	basepath := path.Dir(file.fileName)
-	filename := path.Base(file.fileName)
-	_, err = os.MkdirAll(basepath, 0777)
+	fileName := path.Base(file.fileName)
+	err = os.MkdirAll(basepath, 0777)
 	checkError(err)
 
-	filePath := path.Join(basepath, filename)
-	localFile, err := os.OpenFile(filePath, os.O_CREAT|os.O_RDWR, 0777)
+	filePath := path.Join(basepath, fileName)
+	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
 	writeOffset := int64(file.chunks[0] * ChunkSize)
-	bytesWritten, err := localFile.WriteAt(readBuffer, writeOffset)
+	_, err = localFile.WriteAt(readBuffer, writeOffset)
 	checkError(err)
 
 	status.status["local"].files[file.fileName].chunks[file.chunks[0]] = 1
-	// TODO: send out Have message to all.
+
+	fileList := []File{file}
+	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
+	sendToAll(haveMessage, false)
+
 	return
 }
 
@@ -129,8 +129,8 @@ func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
 
 			writeBuffer := make([]byte, ChunkSize)
 			readOffset := int64(file.chunks[0] * ChunkSize)
-			fileReading, err := os.Open(file.fileName) //var fileReading *os.File
-			numberOfBytesRead, err := fileReading.ReadAt(writeBuffer, readOffset)
+			fileReading, err := os.Open(file.fileName)
+			_, err = fileReading.ReadAt(writeBuffer, readOffset)
 			checkError(err)
 
 			messageToSend := append(uploadMessage, writeBuffer...)

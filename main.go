@@ -70,7 +70,7 @@ func listenForQuery() {
 
 		inputArr := strings.Split(input, " ")
 		if strings.ToLower(inputArr[0]) == "query" {
-			localPeer.Query(&status.status["local"])
+			localPeer.Query()
 		}
 	}
 }
@@ -134,7 +134,7 @@ func handleMessage(conn *net.TCPConn) {
 	defer conn.Close()
 
 	jsonMessage := make([]byte, HeaderSize)
-	n, err := conn.Read(jsonMessage[0:])
+	_, err := conn.Read(jsonMessage[0:])
 	checkError(err)
 
 	message := decodeMessage(jsonMessage)
@@ -146,9 +146,12 @@ func handleMessage(conn *net.TCPConn) {
 	case message.action == Leave:
 		localPeer.peers.disconnectPeer(message.hostName, message.portNumber)
 
+	case message.action == Have:
+		updateHaveStatus(message.hostName, message.portNumber, message.files[0])
+
 	case message.action == Files:
 		localPeer.peers.connectPeer(message.hostName, message.portNumber)
-		updateStatus(message.hostName, message.portNumber, message.files)
+		updateAllStatus(message.hostName, message.portNumber, message.files)
 
 	case message.action == Upload:
 		localPeer.downloadFile(message.files[0], conn)
