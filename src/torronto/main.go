@@ -151,7 +151,7 @@ func handleMessage(conn *net.TCPConn) {
 
 	case message.action == Files:
 		localPeer.peers.connectPeer(message.hostName, message.portNumber)
-		updateAllStatus(message.hostName, message.portNumber, message.files)
+		updateStatus(message.hostName, message.portNumber, message.files)
 
 	case message.action == Upload:
 		localPeer.downloadFile(message.files[0], conn)
