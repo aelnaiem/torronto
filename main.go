@@ -1,4 +1,4 @@
-package torronto
+package main
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-var hostPeer Peer
-var hostStatus Status
+var localPeer Peer
+var status Status
 
 func main() {
 	if len(os.Args) != 2 {
@@ -22,9 +22,8 @@ func main() {
 
 	var hostName string
 	var portNumber int
-
 	addr := os.Args[1]
-	_, err := fmt.Sscanf(addr, "%s %d", &hostName, &portNumber)
+	_, err := fmt.Sscanf(addr, "%s:%d", &hostName, &portNumber)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
 		os.Exit(1)
@@ -38,77 +37,59 @@ func main() {
 
 	go listenForQuery()
 
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		// error
-	}
 	go listenForFiles()
 
-	err = watcher.Watch("files")
-	if err != nil {
-		// error
-	}
-
-<<<<<<< HEAD
-=======
-	// listen for messages?
->>>>>>> master
 	go listenForMessages(listener)
 
 	peers := Peers{}
 	peers.initialize("peerList")
 
-	hostPeer = Peer{
+	localPeer = Peer{
 		currentState: Connected,
 		peers:        peers,
 		host:         hostName,
 		port:         portNumber,
 	}
 
-<<<<<<< HEAD
-=======
-	// create status object
->>>>>>> master
-	hostStatus = Status{
-		numFiles: 0,
-		files:    make(map[string]File),
+	status = Status{
+		status:      make(map[string]peerStatus),
+		replication: make(map[string][]int),
+	}
+	status.status["local"] = peerStatus{
+		files: make(map[string]File),
 	}
 
-<<<<<<< HEAD
-=======
-	// join the network
->>>>>>> master
-	hostPeer.Join()
+	localPeer.Join()
 }
 
 func listenForQuery() {
 	for {
 		var input string
 		_, err := fmt.Scanln(&input)
-		if err != nil {
-			// error
-		}
+		checkError(err)
 
 		inputArr := strings.Split(input, " ")
 		if strings.ToLower(inputArr[0]) == "query" {
-			hostPeer.Query(&hostStatus)
+			localPeer.Query()
 		}
 	}
 }
 
 func listenForFiles() {
 	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		// error
-	}
+	checkError(err)
+
+	err = watcher.Watch("files")
+	checkError(err)
+
 	for {
 		select {
 		case ev := <-watcher.Event:
 			if ev.IsCreate() {
-				hostPeer.Insert(ev.Name)
+				localPeer.Insert(ev.Name)
 			}
 		case err := <-watcher.Error:
-			print(err)
+			checkError(err)
 		}
 	}
 }
@@ -116,53 +97,31 @@ func listenForFiles() {
 func listenForMessages(listener *net.TCPListener) {
 	for {
 		conn, err := listener.AcceptTCP()
-		if err != nil {
-			continue
-		}
+		checkError(err)
 		go handleMessage(conn)
 	}
 }
 
-<<<<<<< HEAD
 func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", net.JoinHostPort(hostName, strconv.Itoa(portNumber)))
 	checkError(err)
 
 	var conn *net.TCPConn
 	if hasTimeout == true {
-		err = conn.SetDeadline(time.Now().Add(Timeout)) //does this work?
+		err = conn.SetDeadline(time.Now().Add(Timeout))
 	}
-=======
-// use this function to send message to a specified host and port
-// might be better to connect to each peer only once, and keep track
-// of open connections, rather than dialing every times?
-func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
-	addr := []string{hostName, strconv.Itoa(portNumber)}
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", strings.Join(addr, ":"))
-	checkError(err)
-
-	//saw these two lines of code online for adding a timeout
-	//for read and write but not sure if it works completely
-	var conn *net.TCPConn
-	err = conn.SetDeadline(time.Now().Add(Timeout))
->>>>>>> master
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 
 	_, err = conn.Write(msg)
 	checkError(err)
 
-<<<<<<< HEAD
-	conn.Close() //for now we close the connection after the attempt to send message
-=======
-	//for now we close the connection after the attempt to send message
 	conn.Close()
->>>>>>> master
 	conn = nil
 }
 
 func sendToAll(msg []byte, timeout bool) {
-	for _, peer := range hostPeer.peers.peers {
-		if !(peer.host == hostPeer.host && peer.port == hostPeer.port) {
+	for _, peer := range localPeer.peers.peers {
+		if !(peer.host == localPeer.host && peer.port == localPeer.port) {
 			if peer.currentState != Disconnected {
 				sendMessage(peer.host, peer.port, msg, timeout)
 			}
@@ -174,58 +133,42 @@ func handleMessage(conn *net.TCPConn) {
 
 	defer conn.Close()
 
-<<<<<<< HEAD
-=======
-	//read up to headerSize bytes
->>>>>>> master
 	jsonMessage := make([]byte, HeaderSize)
-	for {
-		n, err := conn.Read(jsonMessage[0:])
-		checkError(err)
-		print(n)
-	}
+	_, err := conn.Read(jsonMessage[0:])
+	checkError(err)
 
-<<<<<<< HEAD
 	message := decodeMessage(jsonMessage)
-
-=======
-	// convert JSON message into type Message
-	message := decodeMessage(jsonMessage)
-
-	// identify the type of message and act appropriately
->>>>>>> master
 	switch {
 	case message.action == Join:
-		hostPeer.peers.connectPeer(message.hostName, message.portNumber)
-		hostPeer.sendFileList(message.hostName, message.portNumber)
+		localPeer.peers.connectPeer(message.hostName, message.portNumber)
+		localPeer.sendFileList(message.hostName, message.portNumber)
 
 	case message.action == Leave:
-		hostPeer.peers.disconnectPeer(message.hostName, message.portNumber)
+		localPeer.peers.disconnectPeer(message.hostName, message.portNumber)
+
+	case message.action == Have:
+		updateHaveStatus(message.hostName, message.portNumber, message.files[0])
 
 	case message.action == Files:
-		hostPeer.peers.connectPeer(message.hostName, message.portNumber)
-		updateStatus(message.files)
+		localPeer.peers.connectPeer(message.hostName, message.portNumber)
+		updateStatus(message.hostName, message.portNumber, message.files)
 
 	case message.action == Upload:
-		hostPeer.downloadFile(message.files[0], conn)
+		localPeer.downloadFile(message.files[0], conn)
 
 	case message.action == Download:
-		hostPeer.uploadFile(message.hostName, message.portNumber, message.files[0])
+		localPeer.uploadFile(message.hostName, message.portNumber, message.files[0])
 	}
 }
 
 func checkError(err error) {
 	if err != nil {
 		if err == io.EOF {
-			//detected closed LAN connection
-			//message not sent
+
 		} else if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-			//timout occurred
-			//now what? do we give a timout error message or try
-			//to resend it? or return a code to indicate that it should send
-			//the message elsewhere?
+
 		} else {
-			// every other case
+
 		}
 
 	}

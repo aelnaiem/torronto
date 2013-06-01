@@ -1,8 +1,17 @@
-package torronto
+package main
+
+import (
+	"strconv"
+	"strings"
+)
 
 type Status struct {
-	numFiles int
-	files    map[string]File
+	status      map[string]peerStatus
+	replication map[string][]int
+}
+
+type peerStatus struct {
+	files map[string]File
 }
 
 func (status Status) NumberofFiles() int {
@@ -32,18 +41,53 @@ func (status Status) AverageReplicationLevel(fileNumber int) float32 {
 
 func (status Status) getFileList() []File {
 	fileList := []File{}
-	for _, file := range status.files {
+	for _, file := range status.status["local"].files {
 		fileList = append(fileList, file)
 	}
 	return fileList
 }
 
-func updateStatus([]File) {
-	// TODO: update the status based on the files
+func updateHaveStatus(hostName string, portNumber int, file File) {
+	fullName := strings.Join([]string{hostName, strconv.Itoa(portNumber)}, ":")
 
-	// TODO: send requests for the files we don't have (download request)
-	/*f := File{
-		fileName: filename,
-		chunks:   []int{chunk},
-	}*/
+	if _, ok := status.status[fullName]; !ok {
+		status.status[fullName] = peerStatus{
+			files: make(map[string]File),
+		}
+	}
+	if _, ok := status.status[fullName].files[file.fileName]; !ok {
+		chunks := make([]int, file.chunks[0])
+		for chunk := range chunks {
+			chunks[chunk] = 0
+		}
+		chunks[file.chunks[1]] = 1
+		status.status[fullName].files[file.fileName] = File{
+			fileName: file.fileName,
+			chunks:   chunks,
+		}
+	}
+	status.status[fullName].files[file.fileName].chunks[file.chunks[1]] = 1
+
+	// TODO: check if replication for that file exists and update it
+	// send request to download if we don't have the file
+}
+
+func updateStatus(hostName string, portNumber int, files []File) {
+	fullName := strings.Join([]string{hostName, strconv.Itoa(portNumber)}, ":")
+
+	if _, ok := status.status[fullName]; !ok {
+		status.status[fullName] = peerStatus{
+			files: make(map[string]File),
+		}
+	}
+	for _, file := range files {
+		status.status[fullName].files[file.fileName] = file
+		// TODO: update replication of the file
+		// send request to download if we don't have the file
+	}
+}
+
+func trackNewFile(file File) {
+	status.status["local"].files[file.fileName] = file
+	status.replication[file.fileName] = file.chunks
 }

@@ -1,4 +1,4 @@
-package torronto
+package main
 
 import (
 	"encoding/json"
@@ -19,12 +19,12 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 		files:      files,
 	}
 	jsonMessage, err := json.Marshal(message)
-	//error
+	checkError(err)
 
 	if action == Upload {
-		tempMessage := make([]byte, HeaderSize, HeaderSize)
-		copy(tempMessage, jsonMessage)
-		jsonMessage = tempMessage
+		tmp := make([]byte, HeaderSize, HeaderSize)
+		copy(tmp, jsonMessage)
+		jsonMessage = tmp
 	}
 	return jsonMessage
 }
@@ -32,6 +32,7 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 func decodeMessage(jsonMessage []byte) Message {
 	var message Message
 	err := json.Unmarshal(jsonMessage, &message)
+	checkError(err)
 
 	return message
 }
@@ -39,6 +40,7 @@ func decodeMessage(jsonMessage []byte) Message {
 const (
 	Join     = iota
 	Leave    = iota
+	Have     = iota
 	Files    = iota
 	Upload   = iota
 	Download = iota

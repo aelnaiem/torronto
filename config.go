@@ -1,4 +1,4 @@
-package torronto
+package main
 
 const (
 	ChunkSize  = 65536

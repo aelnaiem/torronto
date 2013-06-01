@@ -2,8 +2,15 @@ torronto - A BitTorrent Implementation in Go
 ============================================
 ## TODO
 
+_Start testing_
+`go build`
+
+`./torronto <hostName>:<portNumber>`
+
 * error checking
-* update status and ask for missing files
+* ask for missing files
+* replication structure
+* send out unique chunks when joining and leaving
 
 ## Torronto Messaging Documentation
 * * *
@@ -46,6 +53,22 @@ _When a joins the network, it send out a message that it's joining and a list of
 * * *
  _The peers respond with a file list._
 
+### Have a new file
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Have",
+  "files":
+    [
+      {
+        "fileName": "<fileName>",
+        "chunks": [<fileSize>, <chunkNumber>]
+      }
+    ]
+}
+```
+
 ### Returning file list
 ```
 {
@@ -77,7 +100,7 @@ _Each peer will then update the status of the files it has, and send out request
     [
       {
         "fileName": "<fileName>",
-        "chunks": [<chunkNumber>]
+        "chunks": [<fileSize>, <chunkNumber>]
       }
     ]
 }
@@ -93,7 +116,7 @@ _Each peer will then update the status of the files it has, and send out request
     [
       {
         "fileName": "<fileName>",
-        "chunks": [<chunkNumber>]
+        "chunks": [<fileSize>, <chunkNumber>]
       }
     ]
 }
