@@ -1,4 +1,4 @@
-package torronto
+package main
 
 import (
 	"encoding/json"

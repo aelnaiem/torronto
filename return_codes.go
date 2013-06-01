@@ -1,4 +1,4 @@
-package torronto
+package main
 
 const (
 	ErrOK             = 0
