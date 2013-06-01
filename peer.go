@@ -115,7 +115,9 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) { //points to tha
 		//error
 	}
 
-	fileCreated, err := os.Create(path.Join(basepath, filename))
+	filePath := path.Join(basepath, filename)
+
+	fileCreated, err = os.OpenFile(filePath, os.O_CREAT|os.O_RDWR, 0777)
 	//error
 
 	var writeOffset int64
