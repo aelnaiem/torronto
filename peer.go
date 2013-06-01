@@ -47,20 +47,15 @@ func (peer Peer) Insert(filename string) {
 		if content == 0 {
 			break
 		}
+
 		f := File{
 			fileName: filename,
 			chunks:   []int{chunk},
 		}
 		fileList := []File{f}
 		uploadMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
-
-		// TODO: append content to uploadmessage
-
-		// sendMessage(hostName, portNumber, uploadMessage, false)
-		// divide the file by chunks and push it out
-		// to peers
+		sendMessage(hostName, portNumber, uploadMessage, false)
 	}
-	return
 }
 
 func (peer Peer) Query(status *Status) {
