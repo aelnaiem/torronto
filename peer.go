@@ -113,6 +113,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	checkError(err)
 
 	status.status["local"].files[file.fileName].chunks[file.chunks[1]] = 1
+	incrementChunkReplication(file.fileName, file.chunks[1], file.chunks[0])
 
 	fileList := []File{file}
 	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
@@ -137,6 +138,18 @@ func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
 			sendMessage(hostName, portNumber, messageToSend, false)
 		}
 	}
+	return
+}
+
+func (peer Peer) requestFile(file File) {
+	if file, ok := status.status["local"].files[file.fileName]; ok {
+		if file.chunks[file.chunks[1]] == 1 {
+			return
+		}
+	}
+	fileList := []File{file}
+	downloadMessage := encodeMessage(peer.host, peer.port, Download, fileList)
+	sendToAll(downloadMessage, false)
 	return
 }
 

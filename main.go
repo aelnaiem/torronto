@@ -53,7 +53,7 @@ func main() {
 
 	status = Status{
 		status:      make(map[string]peerStatus),
-		replication: make(map[string][]int),
+		replication: make(map[string][][]int),
 	}
 	status.status["local"] = peerStatus{
 		files: make(map[string]File),

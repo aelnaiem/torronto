@@ -7,7 +7,7 @@ import (
 
 type Status struct {
 	status      map[string]peerStatus
-	replication map[string][]int
+	replication map[string][][]int
 }
 
 type peerStatus struct {
@@ -68,8 +68,8 @@ func updateHaveStatus(hostName string, portNumber int, file File) {
 	}
 	status.status[fullName].files[file.fileName].chunks[file.chunks[1]] = 1
 
-	// TODO: check if replication for that file exists and update it
-	// send request to download if we don't have the file
+	incrementChunkReplication(file.fileName, file.chunks[1], file.chunks[0])
+	localPeer.requestFile(file)
 }
 
 func updateStatus(hostName string, portNumber int, files []File) {
@@ -82,12 +82,41 @@ func updateStatus(hostName string, portNumber int, files []File) {
 	}
 	for _, file := range files {
 		status.status[fullName].files[file.fileName] = file
-		// TODO: update replication of the file
-		// send request to download if we don't have the file
+		for chunk := range file.chunks {
+			if file.chunks[chunk] == 1 {
+				incrementChunkReplication(file.fileName, chunk, len(file.chunks))
+				f := File{
+					fileName: file.fileName,
+					chunks:   []int{len(file.chunks), chunk},
+				}
+				localPeer.requestFile(f)
+			}
+		}
 	}
 }
 
 func trackNewFile(file File) {
 	status.status["local"].files[file.fileName] = file
-	status.replication[file.fileName] = file.chunks
+	status.replication[file.fileName] = make([][]int, MaxPeers)
+	status.replication[file.fileName][0] = file.chunks
+}
+
+func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
+	if _, ok := status.replication[fileName]; !ok {
+		status.replication[fileName] = make([][]int, MaxPeers)
+		for i := 0; i < MaxPeers; i++ {
+			status.replication[fileName][i] = make([]int, numChunks)
+		}
+	}
+
+	replicationLevel := 0
+	for i := 0; i < MaxPeers; i++ {
+		if status.replication[fileName][i][chunkNumber] == 1 {
+			replicationLevel = i
+			break
+		}
+	}
+
+	status.replication[fileName][replicationLevel][chunkNumber] = 0
+	status.replication[fileName][replicationLevel][chunkNumber] = 1
 }
