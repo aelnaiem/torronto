@@ -15,17 +15,66 @@ _Start testing_
 ## Torronto Messaging Documentation
 * * *
 
+## Interface Messaging
+_We tell the node to join the network._
+### Joining network
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Join",
+}
+```
+
+_We tell the node to leave the network_
+### Leaving network
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Remove"
+}
+```
+
+_We tell the node to leave the network_
+### Querying the node for the status of its files
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Query"
+}
+```
+
+_Giving the node the path to a file to insert_
+### Leaving network
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Insert",
+  "files":
+    [
+      {
+        "fileName": "<fileName>",
+      }
+    ]
+}
+```
+
 _Using [json](www.json.org) for data interchange_
 
 _Each message is a header with some max size_
-_
+
+## Peer Messaging
+* * *
 _When a joins the network, it send out a message that it's joining and a list of its files._
 ### Joining network
 ```
 {
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
-  "action": "join",
+  "action": "Add",
   "files":
     [
       {
@@ -45,36 +94,19 @@ _When a joins the network, it send out a message that it's joining and a list of
 {
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
-  "action": "leave"
+  "action": "Remove"
 }
-
 ```
 
 * * *
  _The peers respond with a file list._
-
-### Have a new file
-```
-{
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Have",
-  "files":
-    [
-      {
-        "fileName": "<fileName>",
-        "chunks": [<fileSize>, <chunkNumber>]
-      }
-    ]
-}
-```
 
 ### Returning file list
 ```
 {
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
-  "action": "files",
+  "action": "Files",
   "files":
     [
       {
@@ -95,7 +127,7 @@ _Each peer will then update the status of the files it has, and send out request
 {
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
-  "action": "download",
+  "action": "Download",
   "files":
     [
       {
@@ -111,7 +143,25 @@ _Each peer will then update the status of the files it has, and send out request
 {
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
-  "action": "upload",
+  "action": "Upload",
+  "files":
+    [
+      {
+        "fileName": "<fileName>",
+        "chunks": [<fileSize>, <chunkNumber>]
+      }
+    ]
+}
+```
+
+ _Peer messages whenever it receives a new chunk_
+
+### Have a new file
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Have",
   "files":
     [
       {
@@ -123,6 +173,3 @@ _Each peer will then update the status of the files it has, and send out request
 ```
 
 * * *
-
-_Incomplete files are saved with their chunk number in the name_
-.`<fileName>:<chunkNumber>`

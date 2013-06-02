@@ -40,6 +40,10 @@ func decodeMessage(jsonMessage []byte) Message {
 const (
 	Join     = iota
 	Leave    = iota
+	Query    = iota
+	Insert   = iota
+	Add      = iota
+	Remove   = iota
 	Have     = iota
 	Files    = iota
 	Upload   = iota

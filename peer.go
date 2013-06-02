@@ -13,7 +13,7 @@ type Peer struct {
 	port         int
 }
 
-func (peer Peer) Insert(fileName string) {
+func (peer Peer) insert(fileName string) {
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -56,24 +56,24 @@ func (peer Peer) Insert(fileName string) {
 	// }
 }
 
-func (peer Peer) Query() {
+func (peer Peer) query() {
 	// TODO: print out status of files
 	return
 }
 
-func (peer Peer) Join() {
+func (peer Peer) join() {
 	makeFileList()
 	fileList := status.getFileList()
 
-	joinMessage := encodeMessage(peer.host, peer.port, Join, fileList)
+	joinMessage := encodeMessage(peer.host, peer.port, Add, fileList)
 	sendToAll(joinMessage, true)
 	return
 }
 
-func (peer Peer) Leave() {
+func (peer Peer) leave() {
 	// TODO: push out unique chunks, least replicated first
 
-	leaveMessage := encodeMessage(peer.host, peer.port, Leave, nil)
+	leaveMessage := encodeMessage(peer.host, peer.port, Remove, nil)
 	sendToAll(leaveMessage, false)
 	return
 }

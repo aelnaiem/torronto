@@ -14,27 +14,27 @@ type peerStatus struct {
 	files map[string]File
 }
 
-func (status Status) NumberofFiles() int {
+func (status Status) numberofFiles() int {
 	// TODO: code
 	return 0
 }
 
-func (status Status) FractionPresentLocally(fileNumber int) float32 {
+func (status Status) fractionPresentLocally(fileNumber int) float32 {
 	// TODO: code
 	return 0
 }
 
-func (status Status) FractionPresent(fileNumber int) float32 {
+func (status Status) fractionPresent(fileNumber int) float32 {
 	// TODO: code
 	return 0
 }
 
-func (status Status) MinimumReplicationLevel(fileNumber int) int {
+func (status Status) minimumReplicationLevel(fileNumber int) int {
 	// TODO: code
 	return 0
 }
 
-func (status Status) AverageReplicationLevel(fileNumber int) float32 {
+func (status Status) averageReplicationLevel(fileNumber int) float32 {
 	// TODO: code
 	return 0
 }
