@@ -19,22 +19,22 @@ func (status Status) numberofFiles() int {
 	return 0
 }
 
-func (status Status) fractionPresentLocally(fileNumber int) float32 {
+func (status Status) fractionPresentLocally() []float32 {
 	// TODO: code
 	return 0
 }
 
-func (status Status) fractionPresent(fileNumber int) float32 {
+func (status Status) fractionPresent() []float32 {
 	// TODO: code
 	return 0
 }
 
-func (status Status) minimumReplicationLevel(fileNumber int) int {
+func (status Status) minimumReplicationLevel() []int {
 	// TODO: code
 	return 0
 }
 
-func (status Status) averageReplicationLevel(fileNumber int) float32 {
+func (status Status) averageReplicationLevel() []float32 {
 	// TODO: code
 	return 0
 }

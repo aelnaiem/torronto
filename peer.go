@@ -56,8 +56,16 @@ func (peer Peer) insert(fileName string) {
 	// }
 }
 
-func (peer Peer) query() {
-	// TODO: print out status of files
+func (peer Peer) query(hostName string, portNumber int) {
+	status = Interface{
+		"numFiles":                 status.numberofFiles(),
+		"local":                    status.fractionPresentLocally(),
+		"system":                   status.fractionPresent(),
+		"leastReplication":         status.minimumReplicationLevel(),
+		"weightedLeastReplication": status.averageReplicationLevel(),
+	}
+
+	sendMessage(hostName, portNumber, statusMessage, false)
 	return
 }
 

@@ -37,16 +37,6 @@ _We tell the node to leave the network_
 }
 ```
 
-_We tell the node to leave the network_
-### Querying status
-```
-{
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Query"
-}
-```
-
 _Giving the node the path to a file to insert_
 ### Inserting a file
 ```
@@ -62,6 +52,29 @@ _Giving the node the path to a file to insert_
     ]
 }
 ```
+
+_We tell the node to leave the network_
+### Querying status
+```
+{
+  "hostName": "<hostName>",
+  "portNumber": "<portNumber>",
+  "action": "Query"
+}
+```
+
+_The nodes responds with a status json object_
+### Response to a query
+```
+{
+  "numFiles": <numFiles>,
+  "local": [<fractionPresentLocally>, <fractionPresentLocally>, ...],
+  "system": [<fractionPresent>, <fractionPresent>, ...],
+  "leastReplication": [<minimumReplicationLevel>, <minimumReplicationLevel>, ...],
+  "weightedLeastReplication": [<averageReplicationLevel>, <averageReplicationLevel>, ...]
+}
+```
+
 * * *
 ## Peer Messaging
 
