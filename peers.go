@@ -8,7 +8,8 @@ import (
 )
 
 type Peers struct {
-	peers []Peer
+	numPeers int
+	peers    []Peer
 }
 
 func (peers Peers) initialize(peersFile string) {
@@ -24,6 +25,7 @@ func (peers Peers) initialize(peersFile string) {
 	}
 
 	peers.peers = make([]Peer, len(lines))
+	peers.numPeers = 0
 	for i, line := range lines {
 		if len(line) == 0 {
 			continue
@@ -54,10 +56,12 @@ func (peers Peers) connectPeer(hostName string, portNumber int) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
 	peer.currentState = Connected
+	peers.numPeers += 1
 }
 
 func (peers Peers) disconnectPeer(hostName string, portNumber int) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
 	peer.currentState = Disconnected
+	peers.numPeers -= 1
 }
