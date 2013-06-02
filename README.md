@@ -9,6 +9,14 @@ _Start testing_
 
 * error checking
 * copy a file on insert interface message
+* return error codes for API
+* update replication for peers who leave without sharing all their files
+
+Documentation
+* overview
+* system design: justify low-level socket protocol used between peers to meet requirements
+* algorithm and implementation issues
+* testing plan
 
 ## Torronto Messaging Documentation
 

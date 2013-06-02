@@ -44,8 +44,8 @@ const (
 	Insert   = iota
 	Add      = iota
 	Remove   = iota
-	Have     = iota
 	Files    = iota
 	Upload   = iota
 	Download = iota
+	Have     = iota
 )
