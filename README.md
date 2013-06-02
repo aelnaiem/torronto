@@ -8,9 +8,7 @@ _Start testing_
 `./torronto <hostName>:<portNumber>`
 
 * error checking
-* copy a file on insert interface message
 * return error codes for API
-* update replication for peers who leave without sharing all their files
 
 Documentation
 * overview

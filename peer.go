@@ -63,6 +63,7 @@ func (peer Peer) query(hostName string, portNumber int) {
 }
 
 func (peer Peer) join() {
+	peer.currentState = Connected
 	makeFileList()
 	fileList := status.getFileList()
 
@@ -72,7 +73,6 @@ func (peer Peer) join() {
 }
 
 func (peer Peer) leave() {
-	// TODO: push out unique chunks, least replicated first
 	files := status.status["local"].files
 	for file := range files {
 		for chunk := range files[file].chunks {

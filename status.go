@@ -63,7 +63,7 @@ func (status Status) minimumReplicationLevel(fileArray []string) []int {
 			for r := range f {
 				for chunk := 0; chunk < len(f[r]); chunk++ {
 					if f[r][chunk] == 1 {
-						lowest = r + 1
+						lowest = r
 						break Search
 					}
 				}
@@ -87,7 +87,7 @@ func (status Status) averageReplicationLevel(fileArray []string) []float32 {
 						numReplicated += 1
 					}
 				}
-				sum += float32((r + 1) * numReplicated)
+				sum += float32(r * numReplicated)
 			}
 		}
 		length := float32(len(status.status["local"].files[fileArray[file]].chunks))
@@ -154,20 +154,20 @@ func updateStatus(hostName string, portNumber int, files []File) {
 
 func trackNewFile(file File) {
 	status.status["local"].files[file.fileName] = file
-	status.replication[file.fileName] = make([][]int, MaxPeers)
+	status.replication[file.fileName] = make([][]int, MaxPeers+1)
 	status.replication[file.fileName][0] = file.chunks
 }
 
 func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
 	if _, ok := status.replication[fileName]; !ok {
-		status.replication[fileName] = make([][]int, MaxPeers)
+		status.replication[fileName] = make([][]int, MaxPeers+1)
 		for i := 0; i < MaxPeers; i++ {
 			status.replication[fileName][i] = make([]int, numChunks)
 		}
 	}
 
 	replicationLevel := 0
-	for i := MaxPeers - 1; i >= 0; i-- {
+	for i := MaxPeers; i >= 0; i-- {
 		if status.replication[fileName][i][chunkNumber] == 1 {
 			replicationLevel = i
 			break
@@ -176,4 +176,42 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 
 	status.replication[fileName][replicationLevel+1][chunkNumber] = 1
 	status.replication[fileName][replicationLevel][chunkNumber] = 0
+}
+
+func decrementPeerReplication(hostName string, portNumber int) {
+	fullName := strings.Join([]string{hostName, strconv.Itoa(portNumber)}, ":")
+
+	if _, ok := status.status[fullName]; !ok {
+		status.status[fullName] = peerStatus{
+			files: make(map[string]File),
+		}
+	}
+
+	for _, file := range status.status[fullName].files {
+		for chunk := range file.chunks {
+			if file.chunks[chunk] == 1 {
+				decrementChunkReplication(file.fileName, chunk, len(file.chunks))
+			}
+		}
+	}
+}
+
+func decrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
+	if _, ok := status.replication[fileName]; !ok {
+		status.replication[fileName] = make([][]int, MaxPeers+1)
+		for i := 0; i < MaxPeers; i++ {
+			status.replication[fileName][i] = make([]int, numChunks)
+		}
+	}
+
+	replicationLevel := 0
+	for i := 0; i <= MaxPeers; i++ {
+		if status.replication[fileName][i][chunkNumber] == 1 {
+			replicationLevel = i
+			break
+		}
+	}
+
+	status.replication[fileName][replicationLevel][chunkNumber] = 0
+	status.replication[fileName][replicationLevel-1][chunkNumber] = 1
 }
