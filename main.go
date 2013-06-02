@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/howeyc/fsnotify"
+	// "github.com/howeyc/fsnotify"
 	"io"
 	"net"
 	"os"
 	"strconv"
-	"strings"
+	// "strings"
 	"time"
 )
 
@@ -35,9 +35,9 @@ func main() {
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	checkError(err)
 
-	go listenForQuery()
+	// go listenForQuery()
 
-	go listenForFiles()
+	// go listenForFiles()
 
 	go listenForMessages(listener)
 
@@ -59,40 +59,40 @@ func main() {
 		files: make(map[string]File),
 	}
 
-	localPeer.Join()
+	// localPeer.join()
 }
 
-func listenForQuery() {
-	for {
-		var input string
-		_, err := fmt.Scanln(&input)
-		checkError(err)
+// func listenForQuery() {
+// 	for {
+// 		var input string
+// 		_, err := fmt.Scanln(&input)
+// 		checkError(err)
 
-		inputArr := strings.Split(input, " ")
-		if strings.ToLower(inputArr[0]) == "query" {
-			localPeer.Query()
-		}
-	}
-}
+// 		inputArr := strings.Split(input, " ")
+// 		if strings.ToLower(inputArr[0]) == "query" {
+// 			localPeer.query()
+// 		}
+// 	}
+// }
 
-func listenForFiles() {
-	watcher, err := fsnotify.NewWatcher()
-	checkError(err)
+// func listenForFiles() {
+// 	watcher, err := fsnotify.NewWatcher()
+// 	checkError(err)
 
-	err = watcher.Watch("files")
-	checkError(err)
+// 	err = watcher.Watch("files")
+// 	checkError(err)
 
-	for {
-		select {
-		case ev := <-watcher.Event:
-			if ev.IsCreate() {
-				localPeer.Insert(ev.Name)
-			}
-		case err := <-watcher.Error:
-			checkError(err)
-		}
-	}
-}
+// 	for {
+// 		select {
+// 		case ev := <-watcher.Event:
+// 			if ev.IsCreate() {
+// 				localPeer.insert(ev.Name)
+// 			}
+// 		case err := <-watcher.Error:
+// 			checkError(err)
+// 		}
+// 	}
+// }
 
 func listenForMessages(listener *net.TCPListener) {
 	for {
@@ -139,15 +139,23 @@ func handleMessage(conn *net.TCPConn) {
 
 	message := decodeMessage(jsonMessage)
 	switch {
+	// interface messages
 	case message.action == Join:
+		localPeer.join()
+	case message.action == Leave:
+		localPeer.leave()
+	case message.action == Query:
+		localPeer.query(message.hostName, message.portNumber)
+	case message.action == Insert:
+		localPeer.insert(message.files[0].fileName)
+
+	// peer messages
+	case message.action == Add:
 		localPeer.peers.connectPeer(message.hostName, message.portNumber)
 		localPeer.sendFileList(message.hostName, message.portNumber)
 
-	case message.action == Leave:
+	case message.action == Remove:
 		localPeer.peers.disconnectPeer(message.hostName, message.portNumber)
-
-	case message.action == Have:
-		updateHaveStatus(message.hostName, message.portNumber, message.files[0])
 
 	case message.action == Files:
 		localPeer.peers.connectPeer(message.hostName, message.portNumber)
@@ -158,6 +166,9 @@ func handleMessage(conn *net.TCPConn) {
 
 	case message.action == Download:
 		localPeer.uploadFile(message.hostName, message.portNumber, message.files[0])
+
+	case message.action == Have:
+		updateHaveStatus(message.hostName, message.portNumber, message.files[0])
 	}
 }
 

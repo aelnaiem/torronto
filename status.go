@@ -14,29 +14,86 @@ type peerStatus struct {
 	files map[string]File
 }
 
-func (status Status) NumberofFiles() int {
-	// TODO: code
-	return 0
+type StatusInterface struct {
+	numFiles                 int
+	files                    []string
+	local                    []float32
+	system                   []float32
+	leastReplication         []int
+	weightedLeastReplication []float32
 }
 
-func (status Status) FractionPresentLocally(fileNumber int) float32 {
-	// TODO: code
-	return 0
+func (status Status) numberofFiles() int {
+	return len(status.replication)
 }
 
-func (status Status) FractionPresent(fileNumber int) float32 {
-	// TODO: code
-	return 0
+func (status Status) fractionPresentLocally(fileArray []string) []float32 {
+	fplArray := make([]float32, 0, len(fileArray))
+	for file := range fileArray {
+		local := float32(0.0)
+		if f, ok := status.status["local"].files[fileArray[file]]; ok {
+			for chunk := range f.chunks {
+				if f.chunks[chunk] == 1 {
+					local += 1
+				}
+			}
+		}
+		length := float32(len(status.status["local"].files[fileArray[file]].chunks))
+		fplArray = append(fplArray, local/length)
+	}
+	return fplArray
 }
 
-func (status Status) MinimumReplicationLevel(fileNumber int) int {
-	// TODO: code
-	return 0
+func (status Status) fractionPresent(fileArray []string) []float32 {
+	// TODO: figure out what the trick is here
+	fpArray := make([]float32, 0, len(fileArray))
+	for i := 0; i < len(fileArray); i++ {
+		fpArray = append(fpArray, 1.0)
+	}
+	return fpArray
 }
 
-func (status Status) AverageReplicationLevel(fileNumber int) float32 {
-	// TODO: code
-	return 0
+func (status Status) minimumReplicationLevel(fileArray []string) []int {
+	mrlArray := make([]int, 0, len(fileArray))
+
+	for file := range fileArray {
+		lowest := 0
+		if f, ok := status.replication[fileArray[file]]; ok {
+		Search:
+			for r := range f {
+				for chunk := 0; chunk < len(f[r]); chunk++ {
+					if f[r][chunk] == 1 {
+						lowest = r + 1
+						break Search
+					}
+				}
+			}
+		}
+		mrlArray = append(mrlArray, lowest)
+	}
+	return mrlArray
+}
+
+func (status Status) averageReplicationLevel(fileArray []string) []float32 {
+	arlArray := make([]float32, 0, len(fileArray))
+
+	for file := range fileArray {
+		sum := float32(0)
+		if f, ok := status.replication[fileArray[file]]; ok {
+			for r := range f {
+				numReplicated := 0
+				for chunk := 0; chunk < len(f[r]); chunk++ {
+					if f[r][chunk] == 1 {
+						numReplicated += 1
+					}
+				}
+				sum += float32((r + 1) * numReplicated)
+			}
+		}
+		length := float32(len(status.status["local"].files[fileArray[file]].chunks))
+		arlArray = append(arlArray, sum/length)
+	}
+	return arlArray
 }
 
 func (status Status) getFileList() []File {
@@ -110,13 +167,13 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 	}
 
 	replicationLevel := 0
-	for i := 0; i < MaxPeers; i++ {
+	for i := MaxPeers - 1; i >= 0; i-- {
 		if status.replication[fileName][i][chunkNumber] == 1 {
 			replicationLevel = i
 			break
 		}
 	}
 
+	status.replication[fileName][replicationLevel+1][chunkNumber] = 1
 	status.replication[fileName][replicationLevel][chunkNumber] = 0
-	status.replication[fileName][replicationLevel][chunkNumber] = 1
 }
