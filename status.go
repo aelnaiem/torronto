@@ -15,28 +15,74 @@ type peerStatus struct {
 }
 
 func (status Status) numberofFiles() int {
-	// TODO: code
-	return 0
+	return len(replication)
 }
 
-func (status Status) fractionPresentLocally() []float32 {
-	// TODO: code
-	return 0
+func (status Status) fractionPresentLocally(fileArray []string) []float32 {
+	fplArray := make([]float32, 0, len(fileArray))
+	for file := range fileArray {
+		local := 0.0
+		if f, ok := status.status["local"].files[fileArray[file]]; ok {
+			for chunk := range f.chunks {
+				if f.chunks[chunk] == 1 {
+					local += 1
+				}
+			}
+		}
+		fplArray.append(local / len(f.chunks))
+	}
+	return fplArray
 }
 
-func (status Status) fractionPresent() []float32 {
-	// TODO: code
-	return 0
+func (status Status) fractionPresent(fileArray []string) []float32 {
+	// TODO: figure out what the trick is here
+	fpArray := make([]float32, 0, len(fileArray))
+	for file := range fileArray {
+		fpArray.append(1.0)
+	}
+	return fplArray
 }
 
-func (status Status) minimumReplicationLevel() []int {
-	// TODO: code
-	return 0
+func (status Status) minimumReplicationLevel(fileArray []string) []int {
+	mrlArray := make([]int, 0, len(fileArray))
+
+	for file := range fileArray {
+		lowest := 0
+		if f, ok := status.replication[fileArray[file]]; ok {
+		Search:
+			for r := range f {
+				for chunk := 0; chunk < len(f[r]); chunk++ {
+					if f[r][chunk] == 1 {
+						lowest = r + 1
+						break Search
+					}
+				}
+			}
+		}
+		mrlArray.append(lowest)
+	}
+	return mrlArray
 }
 
-func (status Status) averageReplicationLevel() []float32 {
-	// TODO: code
-	return 0
+func (status Status) averageReplicationLevel(fileArray []string) []float32 {
+	arlArray := make([]int, 0, len(fileArray))
+
+	for file := range fileArray {
+		sum := 0
+		if f, ok := status.replication[fileArray[file]]; ok {
+			for r := range f {
+				numReplicated := 0
+				for chunk := 0; chunk < len(f[r]); chunk++ {
+					if f[r][chunk] == 1 {
+						numReplicated += 1
+					}
+				}
+				sum += (r + 1) * numReplicated
+			}
+		}
+		arlArray.append(sum)
+	}
+	return arlArray
 }
 
 func (status Status) getFileList() []File {
@@ -118,5 +164,5 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 	}
 
 	status.replication[fileName][replicationLevel][chunkNumber] = 0
-	status.replication[fileName][replicationLevel][chunkNumber] = 1
+	status.replication[fileName][replicationLevel+1][chunkNumber] = 1
 }

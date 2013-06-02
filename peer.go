@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net"
 	"os"
 	"path"
@@ -22,7 +23,6 @@ func (peer Peer) insert(fileName string) {
 	file, err := os.Open(fileName)
 	checkError(err)
 
-	// TODO: why is this defered?
 	defer func() {
 		if err := file.Close(); err != nil {
 			checkError(err)
@@ -57,14 +57,20 @@ func (peer Peer) insert(fileName string) {
 }
 
 func (peer Peer) query(hostName string, portNumber int) {
+	fileArray := make([]string, 0, len(status.replication))
+	for file := range status.replication {
+		fileArray.append(file)
+	}
 	status = Interface{
 		"numFiles":                 status.numberofFiles(),
-		"local":                    status.fractionPresentLocally(),
-		"system":                   status.fractionPresent(),
-		"leastReplication":         status.minimumReplicationLevel(),
-		"weightedLeastReplication": status.averageReplicationLevel(),
+		"files":                    fileArray,
+		"local":                    status.fractionPresentLocally(fileArray),
+		"system":                   status.fractionPresent(fileArray),
+		"leastReplication":         status.minimumReplicationLevel(fileArray),
+		"weightedLeastReplication": status.averageReplicationLevel(fileArray),
 	}
-
+	statusMessage, err := json.Marshal(message)
+	checkError(err)
 	sendMessage(hostName, portNumber, statusMessage, false)
 	return
 }
@@ -80,6 +86,7 @@ func (peer Peer) join() {
 
 func (peer Peer) leave() {
 	// TODO: push out unique chunks, least replicated first
+	files := status.status["local"].files
 
 	leaveMessage := encodeMessage(peer.host, peer.port, Remove, nil)
 	sendToAll(leaveMessage, false)
