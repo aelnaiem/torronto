@@ -8,9 +8,7 @@ _Start testing_
 `./torronto <hostName>:<portNumber>`
 
 * error checking
-* ask for missing files
-* replication structure
-* send out unique chunks when joining and leaving
+* send out unique chunks when leaving and inserting a file into system
 
 ## Torronto Messaging Documentation
 
