@@ -59,17 +59,17 @@ func (peer Peer) insert(fileName string) {
 func (peer Peer) query(hostName string, portNumber int) {
 	fileArray := make([]string, 0, len(status.replication))
 	for file := range status.replication {
-		fileArray.append(file)
+		fileArray = append(fileArray, file)
 	}
-	status = Interface{
-		"numFiles":                 status.numberofFiles(),
-		"files":                    fileArray,
-		"local":                    status.fractionPresentLocally(fileArray),
-		"system":                   status.fractionPresent(fileArray),
-		"leastReplication":         status.minimumReplicationLevel(fileArray),
-		"weightedLeastReplication": status.averageReplicationLevel(fileArray),
+	query := StatusInterface{
+		numFiles:                 status.numberofFiles(),
+		files:                    fileArray,
+		local:                    status.fractionPresentLocally(fileArray),
+		system:                   status.fractionPresent(fileArray),
+		leastReplication:         status.minimumReplicationLevel(fileArray),
+		weightedLeastReplication: status.averageReplicationLevel(fileArray),
 	}
-	statusMessage, err := json.Marshal(message)
+	statusMessage, err := json.Marshal(query)
 	checkError(err)
 	sendMessage(hostName, portNumber, statusMessage, false)
 	return
@@ -86,7 +86,7 @@ func (peer Peer) join() {
 
 func (peer Peer) leave() {
 	// TODO: push out unique chunks, least replicated first
-	files := status.status["local"].files
+	// files := status.status["local"].files
 
 	leaveMessage := encodeMessage(peer.host, peer.port, Remove, nil)
 	sendToAll(leaveMessage, false)
