@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 )
 
@@ -12,10 +12,7 @@ type Peers struct {
 	peers    []Peer
 }
 
-func (peers Peers) initialize(peersFile string) {
-	var hostName string
-	var portNumber int
-
+func (peers *Peers) initialize(peersFile string) {
 	content, err := ioutil.ReadFile("peersFile")
 	checkError(err)
 
@@ -31,7 +28,13 @@ func (peers Peers) initialize(peersFile string) {
 			continue
 		}
 
-		_, err := fmt.Sscanf(line, "%s %d", &hostName, &portNumber)
+		peerData := strings.Split(string(line), " ")
+		if len(peerData) != 2 {
+			// incorrectly formed data, exit?
+		}
+
+		hostName := peerData[0]
+		portNumber, err := strconv.Atoi(peerData[1])
 		checkError(err)
 
 		peers.peers[i] = Peer{
@@ -52,14 +55,14 @@ func (peers Peers) getPeer(hostName string, portNumber int) (Peer, error) {
 	return Peer{}, errors.New("Invalid host and/or port")
 }
 
-func (peers Peers) connectPeer(hostName string, portNumber int) {
+func (peers *Peers) connectPeer(hostName string, portNumber int) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
 	peer.currentState = Connected
 	peers.numPeers += 1
 }
 
-func (peers Peers) disconnectPeer(hostName string, portNumber int) {
+func (peers *Peers) disconnectPeer(hostName string, portNumber int) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
 	peer.currentState = Disconnected

@@ -15,7 +15,7 @@ type Peer struct {
 	port         int
 }
 
-func (peer Peer) insert(fileName string) {
+func (peer *Peer) insert(fileName string) {
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -26,7 +26,7 @@ func (peer Peer) insert(fileName string) {
 	p := 0
 	max := math.Max(float64(peer.peers.numPeers), float64(numChunks))
 
-	for i := 0; i < int(max); i++ {
+	for i := 0; i <= int(max); i++ {
 		if chunk == numChunks {
 			chunk = 0
 		}
@@ -37,9 +37,11 @@ func (peer Peer) insert(fileName string) {
 		if nextPeer.host == peer.host && nextPeer.port == peer.port {
 			continue
 		}
-		peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, chunk, false)
-		chunk += 1
-		p += 1
+		if nextPeer.currentState == Connected {
+			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, chunk, false)
+			chunk += 1
+			p += 1
+		}
 	}
 }
 
@@ -58,13 +60,12 @@ func (peer Peer) query(hostName string, portNumber int) {
 	}
 	statusMessage, err := json.Marshal(query)
 	checkError(err)
-	sendMessage(hostName, portNumber, statusMessage, false)
+	sendMessage(hostName, portNumber, statusMessage)
 	return
 }
 
-func (peer Peer) join() {
+func (peer *Peer) join() {
 	peer.currentState = Connected
-	makeFileList()
 	fileList := status.getFileList()
 
 	joinMessage := encodeMessage(peer.host, peer.port, Add, fileList)
@@ -72,7 +73,7 @@ func (peer Peer) join() {
 	return
 }
 
-func (peer Peer) leave() {
+func (peer *Peer) leave() {
 	files := status.status["local"].files
 	for file := range files {
 		for chunk := range files[file].chunks {
@@ -86,13 +87,14 @@ func (peer Peer) leave() {
 
 	leaveMessage := encodeMessage(peer.host, peer.port, Remove, nil)
 	sendToAll(leaveMessage, false)
+	peer.currentState = Disconnected
 	return
 }
 
 func (peer Peer) sendFileList(hostName string, portNumber int) {
 	fileList := status.getFileList()
 	filesMessage := encodeMessage(peer.host, peer.port, Files, fileList)
-	sendMessage(hostName, portNumber, filesMessage, false)
+	sendMessage(hostName, portNumber, filesMessage)
 	return
 }
 
@@ -167,7 +169,7 @@ func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string,
 	if all {
 		sendToAll(messageToSend, false)
 	} else {
-		sendMessage(hostName, portNumber, messageToSend, false)
+		sendMessage(hostName, portNumber, messageToSend)
 	}
 }
 

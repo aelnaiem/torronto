@@ -29,4 +29,5 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 func makeFileList() {
 	err := filepath.Walk("files", addLocalFile)
 	checkError(err)
+	return
 }

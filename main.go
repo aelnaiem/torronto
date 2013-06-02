@@ -9,7 +9,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var localPeer Peer
@@ -21,10 +20,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	var hostName string
-	var portNumber int
 	addr := os.Args[1]
-	_, err := fmt.Sscanf(addr, "%s:%d", &hostName, &portNumber)
+
+	addrArr := strings.Split(addr, ":")
+	hostName := addrArr[0]
+	portNumber, err := strconv.Atoi(addrArr[1])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
 		os.Exit(1)
@@ -35,10 +35,6 @@ func main() {
 
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	checkError(err)
-
-	go listenForFiles()
-
-	go listenForMessages(listener)
 
 	peers := Peers{}
 	peers.initialize("peerList")
@@ -56,6 +52,11 @@ func main() {
 	status.status["local"] = peerStatus{
 		files: make(map[string]File),
 	}
+
+	makeFileList()
+	go listenForFiles()
+
+	listenForMessages(listener)
 }
 
 func listenForFiles() {
@@ -85,15 +86,13 @@ func listenForMessages(listener *net.TCPListener) {
 	}
 }
 
-func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
+func sendMessage(hostName string, portNumber int, msg []byte) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", net.JoinHostPort(hostName, strconv.Itoa(portNumber)))
 	checkError(err)
 
 	var conn *net.TCPConn
-	if hasTimeout == true {
-		err = conn.SetDeadline(time.Now().Add(Timeout))
-	}
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
+	checkError(err)
 
 	_, err = conn.Write(msg)
 	checkError(err)
@@ -106,18 +105,20 @@ func sendToAll(msg []byte, timeout bool) {
 	for _, peer := range localPeer.peers.peers {
 		if !(peer.host == localPeer.host && peer.port == localPeer.port) {
 			if peer.currentState != Disconnected {
-				sendMessage(peer.host, peer.port, msg, timeout)
+				if timeout {
+					localPeer.peers.disconnectPeer(peer.host, peer.port)
+				}
+				sendMessage(peer.host, peer.port, msg)
 			}
 		}
 	}
 }
 
 func handleMessage(conn *net.TCPConn) {
-
 	defer conn.Close()
 
 	jsonMessage := make([]byte, HeaderSize)
-	_, err := conn.Read(jsonMessage[0:])
+	_, err := conn.Read(jsonMessage)
 	checkError(err)
 
 	message := decodeMessage(jsonMessage)
@@ -145,26 +146,29 @@ func handleMessage(conn *net.TCPConn) {
 		io.Copy(dfile, sfile)
 
 	// peer messages
-	case message.action == Add:
-		localPeer.peers.connectPeer(message.hostName, message.portNumber)
-		localPeer.sendFileList(message.hostName, message.portNumber)
+	case localPeer.currentState == Connected:
+		switch {
+		case message.action == Add:
+			localPeer.peers.connectPeer(message.hostName, message.portNumber)
+			localPeer.sendFileList(message.hostName, message.portNumber)
 
-	case message.action == Remove:
-		localPeer.peers.disconnectPeer(message.hostName, message.portNumber)
-		decrementPeerReplication(message.hostName, message.portNumber)
+		case message.action == Remove:
+			localPeer.peers.disconnectPeer(message.hostName, message.portNumber)
+			decrementPeerReplication(message.hostName, message.portNumber)
 
-	case message.action == Files:
-		localPeer.peers.connectPeer(message.hostName, message.portNumber)
-		updateStatus(message.hostName, message.portNumber, message.files)
+		case message.action == Files:
+			localPeer.peers.connectPeer(message.hostName, message.portNumber)
+			updateStatus(message.hostName, message.portNumber, message.files)
 
-	case message.action == Upload:
-		localPeer.downloadFile(message.files[0], conn)
+		case message.action == Upload:
+			localPeer.downloadFile(message.files[0], conn)
 
-	case message.action == Download:
-		localPeer.uploadFile(message.hostName, message.portNumber, message.files[0])
+		case message.action == Download:
+			localPeer.uploadFile(message.hostName, message.portNumber, message.files[0])
 
-	case message.action == Have:
-		updateHaveStatus(message.hostName, message.portNumber, message.files[0])
+		case message.action == Have:
+			updateHaveStatus(message.hostName, message.portNumber, message.files[0])
+		}
 	}
 }
 
