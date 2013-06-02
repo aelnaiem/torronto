@@ -8,7 +8,7 @@ _Start testing_
 `./torronto <hostName>:<portNumber>`
 
 * error checking
-* send out unique chunks when leaving and inserting a file into system
+* copy a file on insert interface message
 
 ## Torronto Messaging Documentation
 
