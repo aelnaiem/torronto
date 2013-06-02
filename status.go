@@ -167,13 +167,13 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 	}
 
 	replicationLevel := 0
-	for i := 0; i < MaxPeers; i++ {
+	for i := MaxPeers - 1; i >= 0; i-- {
 		if status.replication[fileName][i][chunkNumber] == 1 {
 			replicationLevel = i
 			break
 		}
 	}
 
-	status.replication[fileName][replicationLevel][chunkNumber] = 0
 	status.replication[fileName][replicationLevel+1][chunkNumber] = 1
+	status.replication[fileName][replicationLevel][chunkNumber] = 0
 }
