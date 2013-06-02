@@ -13,7 +13,10 @@ _Start testing_
 * send out unique chunks when joining and leaving
 
 ## Torronto Messaging Documentation
-* * *
+
+_Using [json](www.json.org) for data interchange_
+
+_Each message is a header with some max size_
 
 ## Interface Messaging
 _We tell the node to join the network._
@@ -32,12 +35,12 @@ _We tell the node to leave the network_
 {
   "hostName": "<hostName>",
   "portNumber": "<portNumber>",
-  "action": "Remove"
+  "action": "Leave"
 }
 ```
 
 _We tell the node to leave the network_
-### Querying the node for the status of its files
+### Querying status
 ```
 {
   "hostName": "<hostName>",
@@ -47,7 +50,7 @@ _We tell the node to leave the network_
 ```
 
 _Giving the node the path to a file to insert_
-### Leaving network
+### Inserting a file
 ```
 {
   "hostName": "<hostName>",
@@ -61,13 +64,9 @@ _Giving the node the path to a file to insert_
     ]
 }
 ```
-
-_Using [json](www.json.org) for data interchange_
-
-_Each message is a header with some max size_
-
-## Peer Messaging
 * * *
+## Peer Messaging
+
 _When a joins the network, it send out a message that it's joining and a list of its files._
 ### Joining network
 ```
@@ -98,7 +97,6 @@ _When a joins the network, it send out a message that it's joining and a list of
 }
 ```
 
-* * *
  _The peers respond with a file list._
 
 ### Returning file list
