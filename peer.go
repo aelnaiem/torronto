@@ -107,7 +107,6 @@ func (peer *Peer) reset() {
 			}
 		}
 	}
-	// TODO: clear status.replication and reset it with local information
 }
 
 func (peer Peer) sendFileList(hostName string, portNumber int) {
