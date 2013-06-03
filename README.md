@@ -11,9 +11,6 @@ _Start testing_
 * return error codes for API
 
 Documentation
-* overview
-* system design: justify low-level socket protocol used between peers to meet requirements
-* algorithm and implementation issues
 * testing plan
 
 ## Torronto Messaging Documentation
