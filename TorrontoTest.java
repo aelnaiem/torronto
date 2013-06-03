@@ -10,10 +10,8 @@ public class TorrontoTest {
 	public static int portNumber;
 	public static JsonObject message;
 	public static String fileName;
-	public static byte[] msg;
 
-	public static void main(String [ ] args) {
-
+	public static void main(String[ ] args) {
 		System.out.println("Hello!");
 		hostName = "127.0.0.1";
 		portNumber = 10000;
@@ -64,15 +62,17 @@ public class TorrontoTest {
 		return leaveMessage;
 	}
 	
-	public static JsonObject insert(fileName, insert){
+	public static JsonObject insert(String f){
 		JsonObject insertMessage = new JsonObject();
 		insertMessage.addProperty("hostName", hostName);
 		insertMessage.addProperty("portNumber", portNumber);
 		insertMessage.addProperty("action", 2);
-
-		JsonObject insertInnerObj = new JsonObject();
-		insertInnerObj.addProperty("fileName", fileName);
-		insertMessage.add("files", insertInnerObj);
+		
+		JsonObject file = new JsonObject();
+		file.addProperty("fileName", f);
+		JsonArray files = new JsonArray();		
+		files.add(file);
+		insertMessage.add("files", files);
 
 		return insertMessage;
 	}
