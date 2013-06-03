@@ -3,42 +3,37 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.net.ServerSocket;
 import com.google.gson.JsonObject;
 
 public class TorrontoTest {
-	public static String hostName;
-	public static int portNumber;
-	public static JsonObject message;
-	public static String fileName;
+	public static String hostName = "127.0.0.1";
+	public static int portNumber = 10000;
 
-	public static void main(String[ ] args) {
-		System.out.println("Hello!");
-		hostName = "127.0.0.1";
-		portNumber = 10000;
-		fileName = "testing123.png"; //include path
-		
-		joinEmpty();
+	public static void main(String[] args) {	
+		peerOne = new Peer("127.0.0.1", 10001);
+		peerTwo = new Peer("127.0.0.1", 10002)
+		testJoinEmpty(peerOne);
 	}
 	
-	public static void joinEmpty()
+	public static void testJoinEmpty(Peer peer)
 		try {
-			Socket socket = new Socket(hostName, portNumber);
-			BufferedReader is = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			ServerSocket server = new ServerSocket(portNumber);
+			Socket socket = new Socket(peer.host, peer.port);
 			DataOutputStream os = new DataOutputStream(socket.getOutputStream());
 
-			message = join();
-			String msgString = new String();
-			msgString = message.toString();
-
+			String msgString = join().toString();
 			byte[] msgByte = (msgString.getBytes());
 
 			os.write(msgByte);
+			os.close()
+			
+			server.accept();
+			Scanner input = new Scanner(link.getInputStream()); 
+			String message = input.nextLine();  
 			System.out.println(message);
-			System.out.println("Join message sent: " + msgByte.toString());
-			System.out.println("RECEIVED: " + is.readLine());
 			
 			is.close()
-			os.close()
 			socket.close();
 
 		} catch (IOException e) {
@@ -53,19 +48,19 @@ public class TorrontoTest {
 		joinMessage.addProperty("action", 0);
 		return joinMessage;
 	}
-
+	
 	public static JsonObject leave(){
 		JsonObject leaveMessage = new JsonObject();
-		leaveMessage.addProperty("hostName", hostName);
-		leaveMessage.addProperty("portNumber", portNumber);
+		leaveMessage.addProperty("hostName", TorrontoTest.hostName);
+		leaveMessage.addProperty("portNumber", TorrontoTest.portNumber);
 		leaveMessage.addProperty("action", 1);
 		return leaveMessage;
 	}
 	
 	public static JsonObject insert(String f){
 		JsonObject insertMessage = new JsonObject();
-		insertMessage.addProperty("hostName", hostName);
-		insertMessage.addProperty("portNumber", portNumber);
+		insertMessage.addProperty("hostName", TorrontoTest.hostName);
+		insertMessage.addProperty("portNumber", TorrontoTest.portNumber);
 		insertMessage.addProperty("action", 2);
 		
 		JsonObject file = new JsonObject();
@@ -73,16 +68,26 @@ public class TorrontoTest {
 		JsonArray files = new JsonArray();		
 		files.add(file);
 		insertMessage.add("files", files);
-
+	
 		return insertMessage;
 	}
 
 	public static JsonObject query(){
 		JsonObject queryMessage = new JsonObject();
-		queryMessage.addProperty("hostName", hostName);
-		queryMessage.addProperty("portNumber", portNumber);
+		queryMessage.addProperty("hostName", TorrontoTest.hostName);
+		queryMessage.addProperty("portNumber", TorrontoTest.portNumber);
 		queryMessage.addProperty("action", 3);
 		return queryMessage;
 	}
 
+}
+
+public class Peer {
+	public static String host;
+	public static int port;
+	
+	public Peer(string hostName, portNumber) {
+		host = hostName;
+		port = portNumber;
+	}
 }

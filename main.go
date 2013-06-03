@@ -20,6 +20,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if !strings.Contains(os.Args[1], ":") {
+		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
+		os.Exit(1)
+	}
+
 	addr := os.Args[1]
 
 	addrArr := strings.Split(addr, ":")
@@ -28,6 +33,10 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
 		os.Exit(1)
+	}
+
+	if _, err := os.Stat("files"); os.IsNotExist(err) {
+		os.Mkdir("files", 0777)
 	}
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", addr)
