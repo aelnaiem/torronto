@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.ServerSocket;
-import com.google.gson.JsonObject;
 
 public class TorrontoTest {
 	public static String hostName = "127.0.0.1";
@@ -12,11 +11,11 @@ public class TorrontoTest {
 
 	public static void main(String[] args) {	
 		peerOne = new Peer("127.0.0.1", 10001);
-		peerTwo = new Peer("127.0.0.1", 10002)
+		peerTwo = new Peer("127.0.0.1", 10002);
 		testJoinEmpty(peerOne);
 	}
 	
-	public static void testJoinEmpty(Peer peer)
+	public static void testJoinEmpty(Peer peer) {
 		try {
 			ServerSocket server = new ServerSocket(portNumber);
 			Socket socket = new Socket(peer.host, peer.port);
@@ -26,14 +25,14 @@ public class TorrontoTest {
 			byte[] msgByte = (msgString.getBytes());
 
 			os.write(msgByte);
-			os.close()
+			os.close();
 			
-			server.accept();
+			Socket link = server.accept();
 			Scanner input = new Scanner(link.getInputStream()); 
 			String message = input.nextLine();  
 			System.out.println(message);
 			
-			is.close()
+			is.close();
 			socket.close();
 
 		} catch (IOException e) {
@@ -86,7 +85,7 @@ public class Peer {
 	public static String host;
 	public static int port;
 	
-	public Peer(string hostName, portNumber) {
+	public Peer(String hostName, int portNumber) {
 		host = hostName;
 		port = portNumber;
 	}

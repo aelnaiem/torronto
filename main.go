@@ -24,7 +24,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
 		os.Exit(1)
 	}
-
 	addr := os.Args[1]
 
 	addrArr := strings.Split(addr, ":")
@@ -58,6 +57,7 @@ func main() {
 		status:      make(map[string]peerStatus),
 		replication: make(map[string][][]int),
 	}
+
 	status.status["local"] = peerStatus{
 		files: make(map[string]File),
 	}
