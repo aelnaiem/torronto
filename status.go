@@ -45,10 +45,18 @@ func (status Status) fractionPresentLocally(fileArray []string) []float32 {
 }
 
 func (status Status) fractionPresent(fileArray []string) []float32 {
-	// TODO: figure out what the trick is here
 	fpArray := make([]float32, 0, len(fileArray))
-	for i := 0; i < len(fileArray); i++ {
-		fpArray = append(fpArray, 1.0)
+
+	for file := range fileArray {
+		levelZero := status.replication[fileArray[file]][0]
+		missing := 0
+		for chunk := range levelZero {
+			if levelZero[chunk] == 1 {
+				missing += 1
+			}
+		}
+		fPresent := float32((len(levelZero) - missing)) / float32(len(levelZero))
+		fpArray = append(fpArray, fPresent)
 	}
 	return fpArray
 }

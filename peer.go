@@ -87,8 +87,27 @@ func (peer *Peer) leave() {
 
 	leaveMessage := encodeMessage(peer.host, peer.port, Remove, nil)
 	sendToAll(leaveMessage, false)
-	peer.currentState = Disconnected
+	peer.reset()
 	return
+}
+
+func (peer *Peer) reset() {
+	peer.currentState = Disconnected
+	for peer := range status.status {
+		if peer != "local" {
+			delete(status.status, peer)
+		}
+	}
+	status.replication = make(map[string][][]int)
+	files := status.status["local"].files
+	for file := range files {
+		for chunk := range files[file].chunks {
+			if files[file].chunks[chunk] == 1 {
+				incrementChunkReplication(file, chunk, len(files[file].chunks))
+			}
+		}
+	}
+	// TODO: clear status.replication and reset it with local information
 }
 
 func (peer Peer) sendFileList(hostName string, portNumber int) {
