@@ -150,9 +150,11 @@ func updateStatus(hostName string, portNumber int, files []File) {
 		for chunk := range file.Chunks {
 			if file.Chunks[chunk] == 1 {
 				incrementChunkReplication(file.FileName, chunk, len(file.Chunks))
+				chunks := make([]int, 2)
+				chunks[0], chunks[1] = len(file.Chunks), chunk
 				f := File{
 					FileName: file.FileName,
-					Chunks:   []int{len(file.Chunks), chunk},
+					Chunks:   chunks,
 				}
 				localPeer.requestFile(f)
 			}
@@ -163,14 +165,23 @@ func updateStatus(hostName string, portNumber int, files []File) {
 func trackNewFile(file File) {
 	status.status["local"].files[file.FileName] = file
 	status.replication[file.FileName] = make([][]int, MaxPeers+1)
-	status.replication[file.FileName][0] = file.Chunks
+	for i := 0; i <= MaxPeers; i++ {
+		status.replication[file.FileName][i] = make([]int, len(file.Chunks))
+		for j := 0; j < len(file.Chunks); j++ {
+			status.replication[file.FileName][i][j] = 0
+		}
+	}
+	status.replication[file.FileName][1] = file.Chunks
 }
 
 func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
 	if _, ok := status.replication[fileName]; !ok {
 		status.replication[fileName] = make([][]int, MaxPeers+1)
-		for i := 0; i < MaxPeers; i++ {
+		for i := 0; i <= MaxPeers; i++ {
 			status.replication[fileName][i] = make([]int, numChunks)
+			for j := 0; j < numChunks; j++ {
+				status.replication[fileName][i][j] = 0
+			}
 		}
 	}
 
@@ -207,7 +218,7 @@ func decrementPeerReplication(hostName string, portNumber int) {
 func decrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
 	if _, ok := status.replication[fileName]; !ok {
 		status.replication[fileName] = make([][]int, MaxPeers+1)
-		for i := 0; i < MaxPeers; i++ {
+		for i := 0; i <= MaxPeers; i++ {
 			status.replication[fileName][i] = make([]int, numChunks)
 		}
 	}

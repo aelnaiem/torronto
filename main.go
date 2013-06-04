@@ -137,7 +137,6 @@ func handleMessage(conn *net.TCPConn) {
 	case message.Action == Join:
 		localPeer.join()
 		response := encodeError(ErrOK)
-		fmt.Printf("%s:%d", message.HostName, message.PortNumber)
 		sendMessage(message.HostName, message.PortNumber, response)
 	case message.Action == Leave:
 		localPeer.leave()
@@ -163,6 +162,7 @@ func handleMessage(conn *net.TCPConn) {
 		switch {
 		case message.Action == Add:
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+			updateStatus(message.HostName, message.PortNumber, message.Files)
 			localPeer.sendFileList(message.HostName, message.PortNumber)
 
 		case message.Action == Remove:

@@ -9,6 +9,8 @@ _Start testing_
 
 * error checking
 * return error codes for API
+* downloaded files have a bunch of weird extra data
+* insert being called on downloaded files
 
 Documentation
 * testing plan

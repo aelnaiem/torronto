@@ -12,6 +12,9 @@ type File struct {
 }
 
 func addLocalFile(path string, info os.FileInfo, err error) error {
+	if info.IsDir() {
+		return nil
+	}
 	numberOfChunks := int(math.Ceil(float64(info.Size()) / ChunkSize))
 	chunks := make([]int, numberOfChunks)
 	for chunk := range chunks {
@@ -22,6 +25,7 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 		FileName: path,
 		Chunks:   chunks,
 	}
+
 	trackNewFile(file)
 	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net"
 	"os"
@@ -16,6 +17,7 @@ type Peer struct {
 }
 
 func (peer *Peer) insert(fileName string) {
+	fmt.Println("ruhoh")
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -38,7 +40,7 @@ func (peer *Peer) insert(fileName string) {
 			continue
 		}
 		if nextPeer.currentState == Connected {
-			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, chunk, false)
+			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
 			chunk += 1
 			p += 1
 		}
@@ -79,7 +81,7 @@ func (peer *Peer) leave() {
 		for chunk := range files[file].Chunks {
 			if files[file].Chunks[chunk] == 1 {
 				if status.replication[file][0][chunk] == 1 {
-					peer.sendPeerChunk("", 0, file, chunk, true)
+					peer.sendPeerChunk("", 0, file, len(status.replication[file][0]), chunk, true)
 				}
 			}
 		}
@@ -143,6 +145,17 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	_, err = localFile.WriteAt(readBuffer, writeOffset)
 	checkError(err)
 
+	if _, ok := status.status["local"].files[file.FileName]; !ok {
+		chunks := make([]int, file.Chunks[0])
+		for chunk := range chunks {
+			chunks[chunk] = 0
+		}
+		chunks[file.Chunks[1]] = 1
+		status.status["local"].files[file.FileName] = File{
+			FileName: file.FileName,
+			Chunks:   chunks,
+		}
+	}
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
@@ -156,18 +169,19 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
 	if f, ok := status.status["local"].files[file.FileName]; ok {
 		if f.Chunks[file.Chunks[1]] == 1 {
-			peer.sendPeerChunk(hostName, portNumber, file.FileName, file.Chunks[1], false)
+			peer.sendPeerChunk(hostName, portNumber, file.FileName, file.Chunks[0], file.Chunks[1], false)
 		}
 	}
 	return
 }
 
-func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string, chunk int, all bool) {
+func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string, numChunks int, chunk int, all bool) {
 	f := File{
 		FileName: fileName,
-		Chunks:   []int{chunk},
+		Chunks:   []int{numChunks, chunk},
 	}
 	fileList := []File{f}
+	fmt.Printf("sending: %s %d\n", fileList, f.Chunks[1])
 	uploadMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
 
 	writeBuffer := make([]byte, ChunkSize)
@@ -192,8 +206,8 @@ func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string,
 }
 
 func (peer Peer) requestFile(file File) {
-	if file, ok := status.status["local"].files[file.FileName]; ok {
-		if file.Chunks[file.Chunks[1]] == 1 {
+	if f, ok := status.status["local"].files[file.FileName]; ok {
+		if f.Chunks[file.Chunks[1]] == 1 {
 			return
 		}
 	}
