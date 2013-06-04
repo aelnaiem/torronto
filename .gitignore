@@ -1,1 +1,7 @@
 torronto
+testenv/.classpath
+testenv/.project
+testenv/Peer.class
+testenv/Test.class
+testenv/peer1/files/
+testenv/peer2/files/
