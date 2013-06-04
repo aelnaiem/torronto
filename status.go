@@ -15,12 +15,12 @@ type peerStatus struct {
 }
 
 type StatusInterface struct {
-	numFiles                 int
-	files                    []string
-	local                    []float32
-	system                   []float32
-	leastReplication         []int
-	weightedLeastReplication []float32
+	NumFiles                 int
+	Files                    []string
+	Local                    []float32
+	System                   []float32
+	LeastReplication         []int
+	WeightedLeastReplication []float32
 }
 
 func (status Status) numberofFiles() int {
@@ -32,13 +32,13 @@ func (status Status) fractionPresentLocally(fileArray []string) []float32 {
 	for file := range fileArray {
 		local := float32(0.0)
 		if f, ok := status.status["local"].files[fileArray[file]]; ok {
-			for chunk := range f.chunks {
-				if f.chunks[chunk] == 1 {
+			for chunk := range f.Chunks {
+				if f.Chunks[chunk] == 1 {
 					local += 1
 				}
 			}
 		}
-		length := float32(len(status.status["local"].files[fileArray[file]].chunks))
+		length := float32(len(status.status["local"].files[fileArray[file]].Chunks))
 		fplArray = append(fplArray, local/length)
 	}
 	return fplArray
@@ -98,7 +98,7 @@ func (status Status) averageReplicationLevel(fileArray []string) []float32 {
 				sum += float32(r * numReplicated)
 			}
 		}
-		length := float32(len(status.status["local"].files[fileArray[file]].chunks))
+		length := float32(len(status.status["local"].files[fileArray[file]].Chunks))
 		arlArray = append(arlArray, sum/length)
 	}
 	return arlArray
@@ -120,20 +120,20 @@ func updateHaveStatus(hostName string, portNumber int, file File) {
 			files: make(map[string]File),
 		}
 	}
-	if _, ok := status.status[fullName].files[file.fileName]; !ok {
-		chunks := make([]int, file.chunks[0])
+	if _, ok := status.status[fullName].files[file.FileName]; !ok {
+		chunks := make([]int, file.Chunks[0])
 		for chunk := range chunks {
 			chunks[chunk] = 0
 		}
-		chunks[file.chunks[1]] = 1
-		status.status[fullName].files[file.fileName] = File{
-			fileName: file.fileName,
-			chunks:   chunks,
+		chunks[file.Chunks[1]] = 1
+		status.status[fullName].files[file.FileName] = File{
+			FileName: file.FileName,
+			Chunks:   chunks,
 		}
 	}
-	status.status[fullName].files[file.fileName].chunks[file.chunks[1]] = 1
+	status.status[fullName].files[file.FileName].Chunks[file.Chunks[1]] = 1
 
-	incrementChunkReplication(file.fileName, file.chunks[1], file.chunks[0])
+	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 	localPeer.requestFile(file)
 }
 
@@ -146,13 +146,13 @@ func updateStatus(hostName string, portNumber int, files []File) {
 		}
 	}
 	for _, file := range files {
-		status.status[fullName].files[file.fileName] = file
-		for chunk := range file.chunks {
-			if file.chunks[chunk] == 1 {
-				incrementChunkReplication(file.fileName, chunk, len(file.chunks))
+		status.status[fullName].files[file.FileName] = file
+		for chunk := range file.Chunks {
+			if file.Chunks[chunk] == 1 {
+				incrementChunkReplication(file.FileName, chunk, len(file.Chunks))
 				f := File{
-					fileName: file.fileName,
-					chunks:   []int{len(file.chunks), chunk},
+					FileName: file.FileName,
+					Chunks:   []int{len(file.Chunks), chunk},
 				}
 				localPeer.requestFile(f)
 			}
@@ -161,9 +161,9 @@ func updateStatus(hostName string, portNumber int, files []File) {
 }
 
 func trackNewFile(file File) {
-	status.status["local"].files[file.fileName] = file
-	status.replication[file.fileName] = make([][]int, MaxPeers+1)
-	status.replication[file.fileName][0] = file.chunks
+	status.status["local"].files[file.FileName] = file
+	status.replication[file.FileName] = make([][]int, MaxPeers+1)
+	status.replication[file.FileName][0] = file.Chunks
 }
 
 func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
@@ -196,9 +196,9 @@ func decrementPeerReplication(hostName string, portNumber int) {
 	}
 
 	for _, file := range status.status[fullName].files {
-		for chunk := range file.chunks {
-			if file.chunks[chunk] == 1 {
-				decrementChunkReplication(file.fileName, chunk, len(file.chunks))
+		for chunk := range file.Chunks {
+			if file.Chunks[chunk] == 1 {
+				decrementChunkReplication(file.FileName, chunk, len(file.Chunks))
 			}
 		}
 	}

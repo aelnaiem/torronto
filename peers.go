@@ -21,7 +21,7 @@ func (peers *Peers) initialize(peersFile string) {
 		// TODO: either cut off extra list members or exit
 	}
 
-	peers.peers = make([]Peer, len(lines))
+	peers.peers = make([]Peer, len(lines)-1)
 	peers.numPeers = 0
 	for i, line := range lines {
 		if len(line) == 0 {
@@ -30,7 +30,7 @@ func (peers *Peers) initialize(peersFile string) {
 
 		peerData := strings.Split(string(line), " ")
 		if len(peerData) != 2 {
-			// incorrectly formed data, exit?
+			continue
 		}
 
 		hostName := peerData[0]

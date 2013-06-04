@@ -51,12 +51,12 @@ func (peer Peer) query(hostName string, portNumber int) {
 		fileArray = append(fileArray, file)
 	}
 	query := StatusInterface{
-		numFiles:                 status.numberofFiles(),
-		files:                    fileArray,
-		local:                    status.fractionPresentLocally(fileArray),
-		system:                   status.fractionPresent(fileArray),
-		leastReplication:         status.minimumReplicationLevel(fileArray),
-		weightedLeastReplication: status.averageReplicationLevel(fileArray),
+		NumFiles:                 status.numberofFiles(),
+		Files:                    fileArray,
+		Local:                    status.fractionPresentLocally(fileArray),
+		System:                   status.fractionPresent(fileArray),
+		LeastReplication:         status.minimumReplicationLevel(fileArray),
+		WeightedLeastReplication: status.averageReplicationLevel(fileArray),
 	}
 	statusMessage, err := json.Marshal(query)
 	checkError(err)
@@ -76,8 +76,8 @@ func (peer *Peer) join() {
 func (peer *Peer) leave() {
 	files := status.status["local"].files
 	for file := range files {
-		for chunk := range files[file].chunks {
-			if files[file].chunks[chunk] == 1 {
+		for chunk := range files[file].Chunks {
+			if files[file].Chunks[chunk] == 1 {
 				if status.replication[file][0][chunk] == 1 {
 					peer.sendPeerChunk("", 0, file, chunk, true)
 				}
@@ -101,9 +101,9 @@ func (peer *Peer) reset() {
 	status.replication = make(map[string][][]int)
 	files := status.status["local"].files
 	for file := range files {
-		for chunk := range files[file].chunks {
-			if files[file].chunks[chunk] == 1 {
-				incrementChunkReplication(file, chunk, len(files[file].chunks))
+		for chunk := range files[file].Chunks {
+			if files[file].Chunks[chunk] == 1 {
+				incrementChunkReplication(file, chunk, len(files[file].Chunks))
 			}
 		}
 	}
@@ -117,8 +117,8 @@ func (peer Peer) sendFileList(hostName string, portNumber int) {
 }
 
 func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
-	if f, ok := status.status["local"].files[file.fileName]; ok {
-		if f.chunks[file.chunks[1]] == 1 {
+	if f, ok := status.status["local"].files[file.FileName]; ok {
+		if f.Chunks[file.Chunks[1]] == 1 {
 			return
 		}
 	}
@@ -130,8 +130,8 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	_, err = tcpConn.Read(readBuffer)
 	checkError(err)
 
-	basepath := path.Dir(file.fileName)
-	fileName := path.Base(file.fileName)
+	basepath := path.Dir(file.FileName)
+	fileName := path.Base(file.FileName)
 	err = os.MkdirAll(basepath, 0777)
 	checkError(err)
 
@@ -139,12 +139,12 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
-	writeOffset := int64(file.chunks[1] * ChunkSize)
+	writeOffset := int64(file.Chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(readBuffer, writeOffset)
 	checkError(err)
 
-	status.status["local"].files[file.fileName].chunks[file.chunks[1]] = 1
-	incrementChunkReplication(file.fileName, file.chunks[1], file.chunks[0])
+	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
+	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
 	fileList := []File{file}
 	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
@@ -154,9 +154,9 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 }
 
 func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
-	if f, ok := status.status["local"].files[file.fileName]; ok {
-		if f.chunks[file.chunks[1]] == 1 {
-			peer.sendPeerChunk(hostName, portNumber, file.fileName, file.chunks[1], false)
+	if f, ok := status.status["local"].files[file.FileName]; ok {
+		if f.Chunks[file.Chunks[1]] == 1 {
+			peer.sendPeerChunk(hostName, portNumber, file.FileName, file.Chunks[1], false)
 		}
 	}
 	return
@@ -164,8 +164,8 @@ func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
 
 func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string, chunk int, all bool) {
 	f := File{
-		fileName: fileName,
-		chunks:   []int{chunk},
+		FileName: fileName,
+		Chunks:   []int{chunk},
 	}
 	fileList := []File{f}
 	uploadMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
@@ -192,8 +192,8 @@ func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string,
 }
 
 func (peer Peer) requestFile(file File) {
-	if file, ok := status.status["local"].files[file.fileName]; ok {
-		if file.chunks[file.chunks[1]] == 1 {
+	if file, ok := status.status["local"].files[file.FileName]; ok {
+		if file.Chunks[file.Chunks[1]] == 1 {
 			return
 		}
 	}
