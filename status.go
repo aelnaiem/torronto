@@ -132,7 +132,6 @@ func updateHaveStatus(hostName string, portNumber int, file File) {
 		}
 	}
 	status.status[fullName].files[file.FileName].Chunks[file.Chunks[1]] = 1
-
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 	localPeer.requestFile(file)
 }
@@ -163,7 +162,12 @@ func updateStatus(hostName string, portNumber int, files []File) {
 }
 
 func trackNewFile(file File) {
-	status.status["local"].files[file.FileName] = file
+	chunksCopy := make([]int, len(file.Chunks))
+	copy(chunksCopy, file.Chunks)
+	status.status["local"].files[file.FileName] = File{
+		FileName: file.FileName,
+		Chunks:   chunksCopy,
+	}
 	status.replication[file.FileName] = make([][]int, MaxPeers+1)
 	for i := 0; i <= MaxPeers; i++ {
 		status.replication[file.FileName][i] = make([]int, len(file.Chunks))

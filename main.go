@@ -110,7 +110,7 @@ func sendMessage(hostName string, portNumber int, msg []byte) error {
 	return err
 }
 
-func sendToAll(msg []byte, timeout bool) {
+func sendToAll(msg []byte) {
 	for _, peer := range localPeer.peers.peers {
 		if !(peer.host == localPeer.host && peer.port == localPeer.port) {
 			if peer.currentState != Disconnected {

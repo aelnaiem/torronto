@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"math"
 	"net"
 	"os"
@@ -17,7 +17,10 @@ type Peer struct {
 }
 
 func (peer *Peer) insert(fileName string) {
-	fmt.Println("ruhoh")
+	if _, ok := status.status["local"].files[fileName]; ok {
+		return
+	}
+
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -45,6 +48,7 @@ func (peer *Peer) insert(fileName string) {
 			p += 1
 		}
 	}
+	return
 }
 
 func (peer Peer) query(hostName string, portNumber int) {
@@ -71,7 +75,7 @@ func (peer *Peer) join() {
 	fileList := status.getFileList()
 
 	joinMessage := encodeMessage(peer.host, peer.port, Add, fileList)
-	sendToAll(joinMessage, true)
+	sendToAll(joinMessage)
 	return
 }
 
@@ -88,7 +92,7 @@ func (peer *Peer) leave() {
 	}
 
 	leaveMessage := encodeMessage(peer.host, peer.port, Remove, nil)
-	sendToAll(leaveMessage, false)
+	sendToAll(leaveMessage)
 	peer.reset()
 	return
 }
@@ -142,7 +146,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	checkError(err)
 
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
-	_, err = localFile.WriteAt(readBuffer, writeOffset)
+	_, err = localFile.WriteAt(bytes.Trim(readBuffer, "\x00"), writeOffset)
 	checkError(err)
 
 	if _, ok := status.status["local"].files[file.FileName]; !ok {
@@ -161,7 +165,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 
 	fileList := []File{file}
 	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
-	sendToAll(haveMessage, false)
+	sendToAll(haveMessage)
 
 	return
 }
@@ -181,7 +185,6 @@ func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string,
 		Chunks:   []int{numChunks, chunk},
 	}
 	fileList := []File{f}
-	fmt.Printf("sending: %s %d\n", fileList, f.Chunks[1])
 	uploadMessage := encodeMessage(peer.host, peer.port, Upload, fileList)
 
 	writeBuffer := make([]byte, ChunkSize)
@@ -199,7 +202,7 @@ func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string,
 
 	messageToSend := append(uploadMessage, writeBuffer...)
 	if all {
-		sendToAll(messageToSend, false)
+		sendToAll(messageToSend)
 	} else {
 		sendMessage(hostName, portNumber, messageToSend)
 	}
@@ -213,7 +216,7 @@ func (peer Peer) requestFile(file File) {
 	}
 	fileList := []File{file}
 	downloadMessage := encodeMessage(peer.host, peer.port, Download, fileList)
-	sendToAll(downloadMessage, false)
+	sendToAll(downloadMessage)
 	return
 }
 
