@@ -148,6 +148,7 @@ func handleMessage(conn *net.TCPConn) {
 			response = encodeError(ErrOK)
 		}
 		sendMessage(message.HostName, message.PortNumber, response)
+		return
 
 	case message.Action == Leave:
 		var response []byte
@@ -160,30 +161,45 @@ func handleMessage(conn *net.TCPConn) {
 			response = encodeError(ErrOK)
 		}
 		sendMessage(message.HostName, message.PortNumber, response)
+		return
 
 	case message.Action == Query:
 		//fmt.Printf("query %s \n", message)
 		localPeer.query(message.HostName, message.PortNumber)
+		return
 
 	case message.Action == Insert:
 		//fmt.Printf("insert %s \n", message)
 		src := message.Files[0].FileName
+		if _, ok := status.status["local"].files[src]; ok {
+			response := encodeError(ErrWarning)
+			sendMessage(message.HostName, message.PortNumber, response)
+			return
+		}
 
 		dstArr := []string{"files", path.Base(message.Files[0].FileName)}
 		dst := strings.Join(dstArr, "/")
 
 		sfile, err := os.Open(src)
-		checkError(err)
+		if err != nil {
+			response := encodeError(ErrWarning)
+			sendMessage(message.HostName, message.PortNumber, response)
+			return
+		}
 		defer sfile.Close()
 
 		dfile, err := os.Create(dst)
-		checkError(err)
+		if err != nil {
+			response := encodeError(ErrWarning)
+			sendMessage(message.HostName, message.PortNumber, response)
+			return
+		}
 		defer dfile.Close()
 		io.Copy(dfile, sfile)
 
 		response := encodeError(ErrOK)
 		sendMessage(message.HostName, message.PortNumber, response)
-
+		return
 	// peer messages
 	// only act when peer is connected
 	case localPeer.currentState == Connected:
@@ -192,24 +208,29 @@ func handleMessage(conn *net.TCPConn) {
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			localPeer.sendFileList(message.HostName, message.PortNumber)
 			//fmt.Printf("Connected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
+			return
 
 		case message.Action == Remove:
 			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
 			//fmt.Printf("Disconnected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
+			return
 
 		case message.Action == Files:
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			updateStatus(message.HostName, message.PortNumber, message.Files)
 			//fmt.Printf("Connected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
+			return
 
 		case message.Action == Upload:
 			localPeer.downloadFile(message.Files[0], conn)
+			return
 
 		case message.Action == Download:
 			localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
-
+			return
 		case message.Action == Have:
 			updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
+			return
 		}
 	}
 }

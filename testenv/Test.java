@@ -39,6 +39,7 @@ public class Test {
 	
 		testInsert("oi");
 		testInsert("oi");
+		testInsert("mia");
 		
 		testQuery();
 	}
@@ -108,7 +109,7 @@ public class Test {
 	}
 	
 	public static void testInsert(String file) {
-		System.out.println("Inserting a file in peer 1");
+		System.out.println("Inserting a file in peer 1 " + file);
 		String insertMsg = createInsertMessage(file).toString();
 		testNetworkJoin();		
 		
