@@ -1,16 +1,8 @@
 torronto - A BitTorrent Implementation in Go
 ============================================
 ## TODO
-
-_Start testing_
-`go build`
-
-`./torronto <hostName>:<portNumber>`
-
-* error checking
-* return error codes for API
-* doesn't leave sometimes when it should
-* sending empty file list on remove sometimes? random
+* race condition between leaving and downloading a file.
+* bigger tests
 
 ## Torronto Messaging Documentation
 
@@ -18,60 +10,89 @@ _Using [json](www.json.org) for data interchange_
 
 _Each message is a header with some max size_
 
+Interface Actions
+```
+  Join   = 0
+  Leave  = 1
+  Insert = 2
+  Query  = 3
+
+```
+
+Peer Actions
+```
+  Add      = 4
+  Remove   = 5
+  Files    = 6
+  Download = 7
+  Upload   = 8
+  Have     = 9
+```
+
+Error Codes
+```
+  ErrOK            = 0
+  ErrConnected     = 1
+  ErrDisconnected  = 2
+  ErrFileExists    = 3
+  ErrFileMissing   = 4
+  ErrBadPermission = 5
+```
+
 ## Interface Messaging
-_We tell the node git o join the network._
+_We tell the peer to join the network._
 ### Joining network
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Join",
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 0,
 }
 ```
 
-_We tell the node to leave the network_
+_We tell the peer to leave the network_
 ### Leaving network
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Leave"
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 1
 }
 ```
 
-_Giving the node the path to a file to insert_
+_Giving the peer the path to a file to insert_
 ### Inserting a file
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Insert",
-  "files":
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 2,
+  "Files":
     [
       {
-        "fileName": "<fileName>",
+        "FileName": "<FileName>",
       }
     ]
 }
 ```
 
-_We tell the node to leave the network_
+_We tell the peer to leave the network_
 ### Querying status
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Query"
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 3
 }
 ```
 
-_The nodes responds with a status json object_
+_The peers responds with a status json object_
 ### Response to a query
 ```
 {
   "numFiles": <numFiles>,
-  "local": [<fractionPresentLocally>, <fractionPresentLocally>, ...],
-  "system": [<fractionPresent>, <fractionPresent>, ...],
+  "local": [<frActionPresentLocally>, <frActionPresentLocally>, ...],
+  "system": [<frActionPresent>, <frActionPresent>, ...],
   "leastReplication": [<minimumReplicationLevel>, <minimumReplicationLevel>, ...],
   "weightedLeastReplication": [<averageReplicationLevel>, <averageReplicationLevel>, ...]
 }
@@ -80,21 +101,21 @@ _The nodes responds with a status json object_
 * * *
 ## Peer Messaging
 
-_When a joins the network, it send out a message that it's joining and a list of its files._
+_When a joins the network, it send out a message that it's joining and a list of its Files._
 ### Joining network
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Add",
-  "files":
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 4,
+  "Files":
     [
       {
-        "file": "<fileName>",
+        "file": "<FileName>",
         "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
       },
       {
-        "file": "<fileName>",
+        "file": "<FileName>",
         "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
       }, ...
     ]
@@ -104,9 +125,9 @@ _When a joins the network, it send out a message that it's joining and a list of
 ### Leaving network
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Remove"
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 5
 }
 ```
 
@@ -115,35 +136,35 @@ _When a joins the network, it send out a message that it's joining and a list of
 ### Returning file list
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Files",
-  "files":
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 6,
+  "Files":
     [
       {
-        "fileName": "<fileName>",
+        "FileName": "<FileName>",
         "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
       },
       {
-        "fileName": "<fileName>",
+        "FileName": "<FileName>",
         "chunks": "[<chunkNumber>, <chunkNumber>, ...]"
       }, ...
     ]
 }
 ```
 
-_Each peer will then update the status of the files it has, and send out requests to download the files it doesn't have_
-### Request to download files
+_Each peer will then update the status of the Files it has, and send out requests to download the Files it doesn't have_
+### Request to download Files
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Download",
-  "files":
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 7,
+  "Files":
     [
       {
-        "fileName": "<fileName>",
-        "chunks": [<fileSize>, <chunkNumber>]
+        "FileName": "<FileName>",
+        "chunks": [<Filesize>, <chunkNumber>]
       }
     ]
 }
@@ -152,14 +173,14 @@ _Each peer will then update the status of the files it has, and send out request
 ### Sending a file chunk (this is followed by the payload)
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Upload",
-  "files":
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 8,
+  "Files":
     [
       {
-        "fileName": "<fileName>",
-        "chunks": [<fileSize>, <chunkNumber>]
+        "FileName": "<FileName>",
+        "chunks": [<Filesize>, <chunkNumber>]
       }
     ]
 }
@@ -170,14 +191,14 @@ _Each peer will then update the status of the files it has, and send out request
 ### Have a new file
 ```
 {
-  "hostName": "<hostName>",
-  "portNumber": "<portNumber>",
-  "action": "Have",
-  "files":
+  "HostName": "<HostName>",
+  "PortNumber": "<PortNumber>",
+  "Action": 9,
+  "Files":
     [
       {
-        "fileName": "<fileName>",
-        "chunks": [<fileSize>, <chunkNumber>]
+        "FileName": "<FileName>",
+        "chunks": [<Filesize>, <chunkNumber>]
       }
     ]
 }
