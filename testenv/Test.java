@@ -38,7 +38,6 @@ public class Test {
 		testNetworkDoubleLeave();
 	
 		testInsert("oi");
-		testInsert("oi");
 		testInsert("mia");
 		
 		testQuery();

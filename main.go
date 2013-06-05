@@ -141,7 +141,7 @@ func handleMessage(conn *net.TCPConn) {
 		var response []byte
 		if localPeer.currentState == Connected {
 			//fmt.Printf("Not joining: %s \n\n", message)
-			response = encodeError(ErrWarning)
+			response = encodeError(ErrConnected)
 		} else {
 			//fmt.Printf("Joining: %s \n\n", message)
 			localPeer.join()
@@ -154,7 +154,7 @@ func handleMessage(conn *net.TCPConn) {
 		var response []byte
 		if localPeer.currentState == Disconnected {
 			//fmt.Printf("Not Leaving: %s \n\n", message)
-			response = encodeError(ErrWarning)
+			response = encodeError(ErrDisconnected)
 		} else {
 			//fmt.Printf("Leaving: %s \n\n", message)
 			localPeer.leave()
@@ -165,24 +165,35 @@ func handleMessage(conn *net.TCPConn) {
 
 	case message.Action == Query:
 		//fmt.Printf("query %s \n", message)
+		if localPeer.currentState == Disconnected {
+			response := encodeError(ErrDisconnected)
+			sendMessage(message.HostName, message.PortNumber, response)
+			return
+		}
 		localPeer.query(message.HostName, message.PortNumber)
 		return
 
 	case message.Action == Insert:
 		//fmt.Printf("insert %s \n", message)
-		src := message.Files[0].FileName
-		if _, ok := status.status["local"].files[src]; ok {
-			response := encodeError(ErrWarning)
+		if localPeer.currentState == Disconnected {
+			response := encodeError(ErrDisconnected)
 			sendMessage(message.HostName, message.PortNumber, response)
 			return
 		}
 
+		src := message.Files[0].FileName
 		dstArr := []string{"files", path.Base(message.Files[0].FileName)}
 		dst := strings.Join(dstArr, "/")
 
+		if _, ok := status.status["local"].files[dst]; ok {
+			response := encodeError(ErrFileExists)
+			sendMessage(message.HostName, message.PortNumber, response)
+			return
+		}
+
 		sfile, err := os.Open(src)
 		if err != nil {
-			response := encodeError(ErrWarning)
+			response := encodeError(ErrFileMissing)
 			sendMessage(message.HostName, message.PortNumber, response)
 			return
 		}
@@ -190,7 +201,7 @@ func handleMessage(conn *net.TCPConn) {
 
 		dfile, err := os.Create(dst)
 		if err != nil {
-			response := encodeError(ErrWarning)
+			response := encodeError(ErrBadPermission)
 			sendMessage(message.HostName, message.PortNumber, response)
 			return
 		}
