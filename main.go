@@ -143,7 +143,7 @@ func handleMessage(conn *net.TCPConn) {
 			fmt.Printf("Not joining: %s \n\n", message)
 			response = encodeError(ErrWarning)
 		} else {
-			fmt.Printf("Joining: %s %d %d %d \n\n", message, message.Action, Join, Files)
+			fmt.Printf("Joining: %s \n\n", message)
 			localPeer.join()
 			response = encodeError(ErrOK)
 		}
@@ -186,32 +186,23 @@ func handleMessage(conn *net.TCPConn) {
 	case localPeer.currentState == Connected:
 		switch {
 		case message.Action == Add:
-			p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
-			if err == nil && p.currentState != Connected {
-				fmt.Printf("Connecting: %s \n\n", message)
-				localPeer.peers.connectPeer(message.HostName, message.PortNumber)
-				updateStatus(message.HostName, message.PortNumber, message.Files)
-				localPeer.sendFileList(message.HostName, message.PortNumber)
-			}
+			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
+			localPeer.sendFileList(message.HostName, message.PortNumber)
+			fmt.Printf("Connected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
 
 		case message.Action == Remove:
-			p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
-			if err == nil && p.currentState != Disconnected {
-				fmt.Printf("Disconnecting: %s \n\n", message)
-				localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
-				decrementPeerReplication(message.HostName, message.PortNumber)
-			}
+			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
+			fmt.Printf("Disconnected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
 
 		case message.Action == Files:
-			localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			updateStatus(message.HostName, message.PortNumber, message.Files)
+			fmt.Printf("Connected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
 
 		case message.Action == Upload:
-			fmt.Printf("Downloading: %s \n\n", message)
 			localPeer.downloadFile(message.Files[0], conn)
 
 		case message.Action == Download:
-			fmt.Printf("Uploading: %s \n\n", message)
 			localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
 
 		case message.Action == Have:

@@ -5,5 +5,4 @@ const (
 	MaxPeers   = 6
 	MaxFiles   = 100
 	HeaderSize = 1000
-	Timeout    = 4
 )

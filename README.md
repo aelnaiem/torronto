@@ -8,7 +8,10 @@ _Start testing_
 `./torronto <hostName>:<portNumber>`
 
 * return error codes for API
-* doesn't leave sometimes when it should
+
+num peers gets reset to 0 when you disconnect, but the other peers are still set to connected
+need to be set to Unknown again.
+
 * race condition between leaving and downloading a file.
 * make sure it doesn't try to insert a big file until that file is done being copied over
 

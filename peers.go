@@ -52,23 +52,28 @@ func (peers *Peers) initialize(peersFile string) {
 	return
 }
 
-func (peers Peers) getPeer(hostName string, portNumber int) (Peer, error) {
-	for _, peer := range peers.peers {
+func (peers Peers) getPeer(hostName string, portNumber int) (*Peer, error) {
+	for i, peer := range peers.peers {
 		if peer.host == hostName && peer.port == portNumber {
-			return peer, nil
+			return &peers.peers[i], nil
 		}
 	}
-	return Peer{}, errors.New("Invalid host and/or port")
+	return &Peer{}, errors.New("Invalid host and/or port")
 }
 
-func (peers *Peers) connectPeer(hostName string, portNumber int) {
+func (peers *Peers) connectPeer(hostName string, portNumber int, files []File) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
 
-	if peer.currentState == Disconnected {
+	if peer.currentState != Connected {
+		updateStatus(hostName, portNumber, files)
 		peers.numPeers += 1
+		fmt.Printf("Number of peers: %d (inc)\n\n", peers.numPeers)
 	}
+	fmt.Printf("old state: %d\n", peer.currentState)
 	peer.currentState = Connected
+	fmt.Printf("new state: %d\n", peer.currentState)
+	return
 }
 
 func (peers *Peers) disconnectPeer(hostName string, portNumber int) {
@@ -78,7 +83,9 @@ func (peers *Peers) disconnectPeer(hostName string, portNumber int) {
 	if peer.currentState == Connected {
 		decrementPeerReplication(hostName, portNumber)
 		peers.numPeers -= 1
+		fmt.Printf("Number of peers: %d (dec)\n\n", peers.numPeers)
 	}
 
 	peer.currentState = Disconnected
+	return
 }

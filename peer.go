@@ -28,29 +28,34 @@ func (peer *Peer) insert(fileName string) {
 
 	addLocalFile(fileName, info, nil)
 
-	numChunks := int(math.Ceil(float64(info.Size()) / ChunkSize))
+	numChunks := int(math.Floor(float64(info.Size())/ChunkSize + 1))
+	max := math.Max(float64(peer.peers.numPeers), float64(numChunks))
+	fmt.Printf("number of peers %d\n\n", peer.peers.numPeers)
 	chunk := 0
 	p := 0
-	max := math.Max(float64(peer.peers.numPeers), float64(numChunks))
-	fmt.Printf("%d: %d : %d \n\n", int(max), peer.peers.numPeers, numChunks)
-	for i := 0; i <= int(max); i++ {
+	for i := 0; i <= int(max)+1; {
+		fmt.Printf("P=%d, peers=%s\n\n", p, peer.peers)
 		if chunk == numChunks {
 			chunk = 0
 		}
-		if p == peer.peers.numPeers {
+		if p == peer.peers.numPeers+1 {
 			p = 0
 		}
 		nextPeer := peer.peers.peers[p]
+		fmt.Println(nextPeer)
 		if nextPeer.host == peer.host && nextPeer.port == peer.port {
+			p += 1
+			i += 1
 			continue
 		}
-		fmt.Println("one")
+		fmt.Println(nextPeer)
 		if nextPeer.currentState == Connected {
 			fmt.Println("three")
 			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
 			chunk += 1
-			p += 1
 		}
+		p += 1
+		i += 1
 	}
 	return
 }
@@ -86,6 +91,9 @@ func (peer *Peer) join() {
 func (peer *Peer) leave() {
 	peer.currentState = Disconnected
 	peer.peers.numPeers = 0
+	for i := range peer.peers.peers {
+		peer.peers.peers[i].currentState = Unknown
+	}
 
 	files := status.status["local"].files
 	for file := range files {
