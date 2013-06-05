@@ -168,23 +168,30 @@ func handleMessage(conn *net.TCPConn) {
 
 	// peer messages
 	case message.Action == Add:
-		fmt.Println("Adding")
-		localPeer.peers.connectPeer(message.HostName, message.PortNumber)
-		updateStatus(message.HostName, message.PortNumber, message.Files)
-		localPeer.sendFileList(message.HostName, message.PortNumber)
+		p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
+		if err == nil && p.currentState != Connected {
+			localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+			updateStatus(message.HostName, message.PortNumber, message.Files)
+			localPeer.sendFileList(message.HostName, message.PortNumber)
+		}
 
 	case message.Action == Remove:
-		localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
-		decrementPeerReplication(message.HostName, message.PortNumber)
+		p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
+		if err == nil && p.currentState != Disconnected {
+			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
+			decrementPeerReplication(message.HostName, message.PortNumber)
+		}
 
 	case message.Action == Files:
 		localPeer.peers.connectPeer(message.HostName, message.PortNumber)
 		updateStatus(message.HostName, message.PortNumber, message.Files)
 
 	case message.Action == Upload:
+		fmt.Printf("Downloading: %s \n\n", message)
 		localPeer.downloadFile(message.Files[0], conn)
 
 	case message.Action == Download:
+		fmt.Printf("Uploading: %s \n\n", message)
 		localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
 
 	case message.Action == Have:

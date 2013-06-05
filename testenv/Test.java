@@ -26,22 +26,20 @@ public class Test {
 		peerOne = new Peer("127.0.0.1", 10001);
 		peerTwo = new Peer("127.0.0.1", 10002);
 		
-//		testSingleJoin();
-//		testSingleLeave();
-//		
-//		testNetworkJoin();
-//		testNetworkLeave();
+		testSingleJoin();
+		testSingleLeave();
 		
-		try {
-			testJoinLeaveMultiple();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		testNetworkJoin();
+		testNetworkLeave();
+
+		testJoinLeaveMultiple();
+		
+		testNetworkDoubleJoin();
+		testNetworkDoubleLeave();
 	}
 
 	public static void testSingleJoin() {
-		System.out.println("Peer 1 joins network");
+		System.out.println("Peer 1 joins the network");
 		String joinMsg = createJoinMessage().toString();
 		
 		res = Message(peerOne, joinMsg);
@@ -50,7 +48,7 @@ public class Test {
 	}
 	
 	public static void testSingleLeave() {
-		System.out.println("Peer 1 leaves network");
+		System.out.println("Peer 1 leaves the network");
 		String leaveMsg = createLeaveMessage().toString();
 		
 		res = Message(peerOne, leaveMsg);
@@ -59,7 +57,7 @@ public class Test {
 	}
 	
 	public static void testNetworkJoin() {
-		System.out.println("Peer 1 and 2 join network");
+		System.out.println("Peer 1 and 2 join the network");
 		String joinMsg = createJoinMessage().toString();
 		
 		res = Message(peerOne, joinMsg);
@@ -71,32 +69,38 @@ public class Test {
 	}
 	
 	public static void testNetworkLeave() {
-		System.out.println("Peer 1 and 2 leave network");
+		System.out.println("Peer 1 and 2 leave the network");
 		String leaveMsg = createLeaveMessage().toString();
 		
 		res = Message(peerOne, leaveMsg);
 		System.out.println(res);
 		
-		res = Message(peerOne, leaveMsg);
+		res = Message(peerTwo, leaveMsg);
 		System.out.println(res);
 		System.out.println();
 	}
 	
-	public static void testJoinLeaveMultiple() throws InterruptedException {	
-		System.out.println("Peer 1 and 2 leave network multiple times");
+	public static void testJoinLeaveMultiple() {	
+		System.out.println("Peer 1 and 2 join and leave the network multiple times");
 		testNetworkJoin();
-		Thread.sleep(1000);		
 		testNetworkLeave();
-		Thread.sleep(1000);
-		testNetworkJoin();
-		Thread.sleep(1000);		
+		testNetworkJoin();	
 		testNetworkLeave();
-		Thread.sleep(1000);
 		testSingleJoin();
-		Thread.sleep(1000);		
 		testSingleLeave();
 	}
 	
+	public static void testNetworkDoubleJoin() {
+		System.out.println("Peer 1 and 2 join the network twice");
+		testNetworkJoin();
+		testNetworkJoin();		
+	}
+	
+	public static void testNetworkDoubleLeave() {
+		System.out.println("Peer 1 and 2 leave the network twice");
+		testNetworkLeave();
+		testNetworkLeave();		
+	}
 	
 	public static String Message(Peer peer, String msgString) {
 		try {
