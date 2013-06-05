@@ -9,9 +9,8 @@ _Start testing_
 
 * error checking
 * return error codes for API
-
-Documentation
-* testing plan
+* doesn't leave sometimes when it should
+* sending empty file list on remove sometimes? random
 
 ## Torronto Messaging Documentation
 
