@@ -36,8 +36,11 @@ public class Test {
 		
 		testNetworkDoubleJoin();
 		testNetworkDoubleLeave();
-		
+	
 		testInsert("oi");
+		testInsert("mia");
+		
+		testQuery();
 	}
 
 	public static void testSingleJoin() {
@@ -105,7 +108,7 @@ public class Test {
 	}
 	
 	public static void testInsert(String file) {
-		System.out.println("Inserting a file in peer 1");
+		System.out.println("Inserting a file in peer 1 " + file);
 		String insertMsg = createInsertMessage(file).toString();
 		testNetworkJoin();		
 		
@@ -119,6 +122,14 @@ public class Test {
 		System.out.println();
 	}
 	
+	public static void testQuery() {
+		System.out.println("Query Peer 1 and Peer 2 status");
+		String leaveMsg = createQueryMessage().toString();
+		
+		res = Message(peerOne, leaveMsg);
+		System.out.println(res);
+		System.out.println();
+	}
 	
 	public static String Message(Peer peer, String msgString) {
 		try {

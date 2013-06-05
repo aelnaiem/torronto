@@ -1,10 +1,10 @@
 package main
 
 const (
-	ErrOK             = 0
-	ErrUnknownWarning = 1
-	ErrWarning        = -2
-	ErrCannotConnect  = -3
-	ErrNoPeersFound   = -4
-	ErrPeerNotFound   = 5
+	ErrOK            = 0
+	ErrConnected     = 1
+	ErrDisconnected  = 2
+	ErrFileExists    = 3
+	ErrFileMissing   = 4
+	ErrBadPermission = 5
 )

@@ -2,7 +2,9 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -18,7 +20,8 @@ func (peers *Peers) initialize(peersFile string) {
 
 	lines := strings.Split(string(content), "\n")
 	if len(lines) > MaxPeers {
-		// TODO: either cut off extra list members or exit
+		fmt.Fprintf(os.Stderr, "Too many peers in peersFile\n")
+		os.Exit(1)
 	}
 
 	peers.peers = make([]Peer, len(lines)-1)
@@ -35,7 +38,10 @@ func (peers *Peers) initialize(peersFile string) {
 
 		hostName := peerData[0]
 		portNumber, err := strconv.Atoi(peerData[1])
-		checkError(err)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Malformed peer listing in peersFile line: %d\n", i)
+			os.Exit(1)
+		}
 
 		peers.peers[i] = Peer{
 			currentState: Unknown,
@@ -46,25 +52,39 @@ func (peers *Peers) initialize(peersFile string) {
 	return
 }
 
-func (peers Peers) getPeer(hostName string, portNumber int) (Peer, error) {
-	for _, peer := range peers.peers {
+func (peers Peers) getPeer(hostName string, portNumber int) (*Peer, error) {
+	for i, peer := range peers.peers {
 		if peer.host == hostName && peer.port == portNumber {
-			return peer, nil
+			return &peers.peers[i], nil
 		}
 	}
-	return Peer{}, errors.New("Invalid host and/or port")
+	return &Peer{}, errors.New("Invalid host and/or port")
 }
 
-func (peers *Peers) connectPeer(hostName string, portNumber int) {
+func (peers *Peers) connectPeer(hostName string, portNumber int, files []File) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
+
+	if peer.currentState != Connected {
+		updateStatus(hostName, portNumber, files)
+		peers.numPeers += 1
+		// fmt.Printf("Number of peers: %d (inc)\n\n", peers.numPeers)
+	}
+
 	peer.currentState = Connected
-	peers.numPeers += 1
+	return
 }
 
 func (peers *Peers) disconnectPeer(hostName string, portNumber int) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
+
+	if peer.currentState == Connected {
+		decrementPeerReplication(hostName, portNumber)
+		peers.numPeers -= 1
+		// fmt.Printf("Number of peers: %d (dec)\n\n", peers.numPeers)
+	}
+
 	peer.currentState = Disconnected
-	peers.numPeers -= 1
+	return
 }
