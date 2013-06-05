@@ -13,30 +13,95 @@ public class Test {
 	public static String hostName = "127.0.0.1";
 	public static int portNumber = 10000;
 	public static ServerSocket server;
-
+	
+	public static String res;
+	public static Peer peerOne;
+	public static Peer peerTwo;
 	public static void main(String[] args) {
-		String res;
 		try {
 			server = new ServerSocket(portNumber);
 		} catch (Exception e){
 			return;
 		}
-		Peer peerOne = new Peer("127.0.0.1", 10001);
-		Peer peerTwo = new Peer("127.0.0.1", 10002);
-
-		res = Join(peerOne);
-		System.out.println(res);
-
-		res = Join(peerTwo);
-		System.out.println(res);
+		peerOne = new Peer("127.0.0.1", 10001);
+		peerTwo = new Peer("127.0.0.1", 10002);
+		
+//		testSingleJoin();
+//		testSingleLeave();
+//		
+//		testNetworkJoin();
+//		testNetworkLeave();
+		
+		try {
+			testJoinLeaveMultiple();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	public static String Join(Peer peer) {
+	public static void testSingleJoin() {
+		System.out.println("Peer 1 joins network");
+		String joinMsg = createJoinMessage().toString();
+		
+		res = Message(peerOne, joinMsg);
+		System.out.println(res);
+		System.out.println();
+	}
+	
+	public static void testSingleLeave() {
+		System.out.println("Peer 1 leaves network");
+		String leaveMsg = createLeaveMessage().toString();
+		
+		res = Message(peerOne, leaveMsg);
+		System.out.println(res);
+		System.out.println();
+	}
+	
+	public static void testNetworkJoin() {
+		System.out.println("Peer 1 and 2 join network");
+		String joinMsg = createJoinMessage().toString();
+		
+		res = Message(peerOne, joinMsg);
+		System.out.println(res);
+		
+		res = Message(peerTwo, joinMsg);
+		System.out.println(res);
+		System.out.println();
+	}
+	
+	public static void testNetworkLeave() {
+		System.out.println("Peer 1 and 2 leave network");
+		String leaveMsg = createLeaveMessage().toString();
+		
+		res = Message(peerOne, leaveMsg);
+		System.out.println(res);
+		
+		res = Message(peerOne, leaveMsg);
+		System.out.println(res);
+		System.out.println();
+	}
+	
+	public static void testJoinLeaveMultiple() throws InterruptedException {	
+		System.out.println("Peer 1 and 2 leave network multiple times");
+		testNetworkJoin();
+		Thread.sleep(1000);		
+		testNetworkLeave();
+		Thread.sleep(1000);
+		testNetworkJoin();
+		Thread.sleep(1000);		
+		testNetworkLeave();
+		Thread.sleep(1000);
+		testSingleJoin();
+		Thread.sleep(1000);		
+		testSingleLeave();
+	}
+	
+	
+	public static String Message(Peer peer, String msgString) {
 		try {
 			Socket socket = new Socket(peer.host, peer.port);
 			DataOutputStream os = new DataOutputStream(socket.getOutputStream());
-
-			String msgString = createJoinMessage().toString();
 			byte[] msgByte = (msgString.getBytes());
 
 			os.write(msgByte);
@@ -44,7 +109,7 @@ public class Test {
 
 			byte[] buf = new byte[100];
 			Socket link = server.accept();
-			System.out.println("hello");
+
 			DataInputStream response = new DataInputStream(link.getInputStream());
 			try{
 				response.readFully(buf);

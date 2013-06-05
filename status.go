@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Status struct {
 	status      map[string]peerStatus
 	replication map[string][][]int
+	mu          sync.Mutex
 }
 
 type peerStatus struct {
@@ -134,20 +137,24 @@ func updateHaveStatus(hostName string, portNumber int, file File) {
 	status.status[fullName].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 	localPeer.requestFile(file)
+	return
 }
 
 func updateStatus(hostName string, portNumber int, files []File) {
 	fullName := strings.Join([]string{hostName, strconv.Itoa(portNumber)}, ":")
-
+	fmt.Println("Updating status")
 	if _, ok := status.status[fullName]; !ok {
+		fmt.Println("Creating status for peer")
 		status.status[fullName] = peerStatus{
 			files: make(map[string]File),
 		}
 	}
+
 	for _, file := range files {
 		status.status[fullName].files[file.FileName] = file
 		for chunk := range file.Chunks {
 			if file.Chunks[chunk] == 1 {
+				fmt.Println("Incrementing")
 				incrementChunkReplication(file.FileName, chunk, len(file.Chunks))
 				chunks := make([]int, 2)
 				chunks[0], chunks[1] = len(file.Chunks), chunk
@@ -159,6 +166,7 @@ func updateStatus(hostName string, portNumber int, files []File) {
 			}
 		}
 	}
+	return
 }
 
 func trackNewFile(file File) {
@@ -189,6 +197,7 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 		}
 	}
 
+	status.mu.Lock()
 	replicationLevel := 0
 	for i := MaxPeers; i >= 0; i-- {
 		if status.replication[fileName][i][chunkNumber] == 1 {
@@ -199,12 +208,15 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 
 	status.replication[fileName][replicationLevel+1][chunkNumber] = 1
 	status.replication[fileName][replicationLevel][chunkNumber] = 0
+	status.mu.Unlock()
+	return
 }
 
 func decrementPeerReplication(hostName string, portNumber int) {
 	fullName := strings.Join([]string{hostName, strconv.Itoa(portNumber)}, ":")
-
+	fmt.Println("Updating status dec")
 	if _, ok := status.status[fullName]; !ok {
+		fmt.Println("Creating status dec")
 		status.status[fullName] = peerStatus{
 			files: make(map[string]File),
 		}
@@ -213,10 +225,12 @@ func decrementPeerReplication(hostName string, portNumber int) {
 	for _, file := range status.status[fullName].files {
 		for chunk := range file.Chunks {
 			if file.Chunks[chunk] == 1 {
+				fmt.Println("Decrementing")
 				decrementChunkReplication(file.FileName, chunk, len(file.Chunks))
 			}
 		}
 	}
+	return
 }
 
 func decrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
@@ -227,6 +241,7 @@ func decrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 		}
 	}
 
+	status.mu.Lock()
 	replicationLevel := 0
 	for i := 0; i <= MaxPeers; i++ {
 		if status.replication[fileName][i][chunkNumber] == 1 {
@@ -237,4 +252,7 @@ func decrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 
 	status.replication[fileName][replicationLevel][chunkNumber] = 0
 	status.replication[fileName][replicationLevel-1][chunkNumber] = 1
+
+	status.mu.Unlock()
+	return
 }

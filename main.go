@@ -103,7 +103,15 @@ func sendMessage(hostName string, portNumber int, msg []byte) error {
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 
 	_, err = conn.Write(msg)
-	checkError(err)
+	if err != nil {
+		p, err := localPeer.peers.getPeer(hostName, portNumber)
+		if err == nil {
+			if p.currentState == Connected {
+				decrementPeerReplication(hostName, portNumber)
+			}
+			localPeer.peers.disconnectPeer(hostName, portNumber)
+		}
+	}
 
 	conn.Close()
 	conn = nil
@@ -114,10 +122,7 @@ func sendToAll(msg []byte) {
 	for _, peer := range localPeer.peers.peers {
 		if !(peer.host == localPeer.host && peer.port == localPeer.port) {
 			if peer.currentState != Disconnected {
-				err := sendMessage(peer.host, peer.port, msg)
-				if err != nil {
-					localPeer.peers.disconnectPeer(peer.host, peer.port)
-				}
+				sendMessage(peer.host, peer.port, msg)
 			}
 		}
 	}
@@ -138,8 +143,12 @@ func handleMessage(conn *net.TCPConn) {
 		localPeer.join()
 		response := encodeError(ErrOK)
 		sendMessage(message.HostName, message.PortNumber, response)
+
 	case message.Action == Leave:
 		localPeer.leave()
+		response := encodeError(ErrOK)
+		sendMessage(message.HostName, message.PortNumber, response)
+
 	case message.Action == Query:
 		localPeer.query(message.HostName, message.PortNumber)
 	case message.Action == Insert:
@@ -158,30 +167,28 @@ func handleMessage(conn *net.TCPConn) {
 		io.Copy(dfile, sfile)
 
 	// peer messages
-	case localPeer.currentState == Connected:
-		switch {
-		case message.Action == Add:
-			localPeer.peers.connectPeer(message.HostName, message.PortNumber)
-			updateStatus(message.HostName, message.PortNumber, message.Files)
-			localPeer.sendFileList(message.HostName, message.PortNumber)
+	case message.Action == Add:
+		fmt.Println("Adding")
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+		updateStatus(message.HostName, message.PortNumber, message.Files)
+		localPeer.sendFileList(message.HostName, message.PortNumber)
 
-		case message.Action == Remove:
-			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
-			decrementPeerReplication(message.HostName, message.PortNumber)
+	case message.Action == Remove:
+		localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
+		decrementPeerReplication(message.HostName, message.PortNumber)
 
-		case message.Action == Files:
-			localPeer.peers.connectPeer(message.HostName, message.PortNumber)
-			updateStatus(message.HostName, message.PortNumber, message.Files)
+	case message.Action == Files:
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+		updateStatus(message.HostName, message.PortNumber, message.Files)
 
-		case message.Action == Upload:
-			localPeer.downloadFile(message.Files[0], conn)
+	case message.Action == Upload:
+		localPeer.downloadFile(message.Files[0], conn)
 
-		case message.Action == Download:
-			localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
+	case message.Action == Download:
+		localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
 
-		case message.Action == Have:
-			updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
-		}
+	case message.Action == Have:
+		updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
 	}
 }
 
