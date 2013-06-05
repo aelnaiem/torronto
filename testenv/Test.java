@@ -38,6 +38,9 @@ public class Test {
 		testNetworkDoubleLeave();
 	
 		testInsert("oi");
+		testInsert("oi");
+		
+		testQuery();
 	}
 
 	public static void testSingleJoin() {
@@ -119,6 +122,14 @@ public class Test {
 		System.out.println();
 	}
 	
+	public static void testQuery() {
+		System.out.println("Query Peer 1 and Peer 2 status");
+		String leaveMsg = createQueryMessage().toString();
+		
+		res = Message(peerOne, leaveMsg);
+		System.out.println(res);
+		System.out.println();
+	}
 	
 	public static String Message(Peer peer, String msgString) {
 		try {
