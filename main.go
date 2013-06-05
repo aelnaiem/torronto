@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	// "github.com/howeyc/fsnotify"
+	"github.com/howeyc/fsnotify"
 	"io"
 	"net"
 	"os"
+	"path"
 	"strconv"
-	// "strings"
-	"time"
+	"strings"
 )
 
 var localPeer Peer
@@ -20,13 +20,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	var hostName string
-	var portNumber int
+	if !strings.Contains(os.Args[1], ":") {
+		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
+		os.Exit(1)
+	}
 	addr := os.Args[1]
-	_, err := fmt.Sscanf(addr, "%s:%d", &hostName, &portNumber)
+
+	addrArr := strings.Split(addr, ":")
+	hostName := addrArr[0]
+	portNumber, err := strconv.Atoi(addrArr[1])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
 		os.Exit(1)
+	}
+
+	if _, err := os.Stat("files"); os.IsNotExist(err) {
+		os.Mkdir("files", 0777)
 	}
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", addr)
@@ -35,17 +44,10 @@ func main() {
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	checkError(err)
 
-	// go listenForQuery()
-
-	// go listenForFiles()
-
-	go listenForMessages(listener)
-
 	peers := Peers{}
 	peers.initialize("peerList")
-
 	localPeer = Peer{
-		currentState: Connected,
+		currentState: Disconnected,
 		peers:        peers,
 		host:         hostName,
 		port:         portNumber,
@@ -55,44 +57,35 @@ func main() {
 		status:      make(map[string]peerStatus),
 		replication: make(map[string][][]int),
 	}
+
 	status.status["local"] = peerStatus{
 		files: make(map[string]File),
 	}
 
-	// localPeer.join()
+	makeFileList()
+	go listenForFiles()
+
+	listenForMessages(listener)
 }
 
-// func listenForQuery() {
-// 	for {
-// 		var input string
-// 		_, err := fmt.Scanln(&input)
-// 		checkError(err)
+func listenForFiles() {
+	watcher, err := fsnotify.NewWatcher()
+	checkError(err)
 
-// 		inputArr := strings.Split(input, " ")
-// 		if strings.ToLower(inputArr[0]) == "query" {
-// 			localPeer.query()
-// 		}
-// 	}
-// }
+	err = watcher.Watch("files")
+	checkError(err)
 
-// func listenForFiles() {
-// 	watcher, err := fsnotify.NewWatcher()
-// 	checkError(err)
-
-// 	err = watcher.Watch("files")
-// 	checkError(err)
-
-// 	for {
-// 		select {
-// 		case ev := <-watcher.Event:
-// 			if ev.IsCreate() {
-// 				localPeer.insert(ev.Name)
-// 			}
-// 		case err := <-watcher.Error:
-// 			checkError(err)
-// 		}
-// 	}
-// }
+	for {
+		select {
+		case ev := <-watcher.Event:
+			if ev.IsCreate() {
+				localPeer.insert(ev.Name)
+			}
+		case err := <-watcher.Error:
+			checkError(err)
+		}
+	}
+}
 
 func listenForMessages(listener *net.TCPListener) {
 	for {
@@ -102,73 +95,100 @@ func listenForMessages(listener *net.TCPListener) {
 	}
 }
 
-func sendMessage(hostName string, portNumber int, msg []byte, hasTimeout bool) {
+func sendMessage(hostName string, portNumber int, msg []byte) error {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", net.JoinHostPort(hostName, strconv.Itoa(portNumber)))
 	checkError(err)
 
 	var conn *net.TCPConn
-	if hasTimeout == true {
-		err = conn.SetDeadline(time.Now().Add(Timeout))
-	}
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 
 	_, err = conn.Write(msg)
-	checkError(err)
+	if err != nil {
+		p, err := localPeer.peers.getPeer(hostName, portNumber)
+		if err == nil {
+			if p.currentState == Connected {
+				decrementPeerReplication(hostName, portNumber)
+			}
+			localPeer.peers.disconnectPeer(hostName, portNumber)
+		}
+	}
 
 	conn.Close()
 	conn = nil
+	return err
 }
 
-func sendToAll(msg []byte, timeout bool) {
+func sendToAll(msg []byte) {
 	for _, peer := range localPeer.peers.peers {
 		if !(peer.host == localPeer.host && peer.port == localPeer.port) {
 			if peer.currentState != Disconnected {
-				sendMessage(peer.host, peer.port, msg, timeout)
+				sendMessage(peer.host, peer.port, msg)
 			}
 		}
 	}
 }
 
 func handleMessage(conn *net.TCPConn) {
-
 	defer conn.Close()
 
 	jsonMessage := make([]byte, HeaderSize)
-	_, err := conn.Read(jsonMessage[0:])
+	_, err := conn.Read(jsonMessage)
 	checkError(err)
 
 	message := decodeMessage(jsonMessage)
 	switch {
+
 	// interface messages
-	case message.action == Join:
+	case message.Action == Join:
 		localPeer.join()
-	case message.action == Leave:
+		response := encodeError(ErrOK)
+		sendMessage(message.HostName, message.PortNumber, response)
+
+	case message.Action == Leave:
 		localPeer.leave()
-	case message.action == Query:
-		localPeer.query(message.hostName, message.portNumber)
-	case message.action == Insert:
-		localPeer.insert(message.files[0].fileName)
+		response := encodeError(ErrOK)
+		sendMessage(message.HostName, message.PortNumber, response)
+
+	case message.Action == Query:
+		localPeer.query(message.HostName, message.PortNumber)
+	case message.Action == Insert:
+		src := message.Files[0].FileName
+
+		dstArr := []string{"files", path.Base(message.Files[0].FileName)}
+		dst := strings.Join(dstArr, "/")
+
+		sfile, err := os.Open(src)
+		checkError(err)
+		defer sfile.Close()
+
+		dfile, err := os.Create(dst)
+		checkError(err)
+		defer dfile.Close()
+		io.Copy(dfile, sfile)
 
 	// peer messages
-	case message.action == Add:
-		localPeer.peers.connectPeer(message.hostName, message.portNumber)
-		localPeer.sendFileList(message.hostName, message.portNumber)
+	case message.Action == Add:
+		fmt.Println("Adding")
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+		updateStatus(message.HostName, message.PortNumber, message.Files)
+		localPeer.sendFileList(message.HostName, message.PortNumber)
 
-	case message.action == Remove:
-		localPeer.peers.disconnectPeer(message.hostName, message.portNumber)
+	case message.Action == Remove:
+		localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
+		decrementPeerReplication(message.HostName, message.PortNumber)
 
-	case message.action == Files:
-		localPeer.peers.connectPeer(message.hostName, message.portNumber)
-		updateStatus(message.hostName, message.portNumber, message.files)
+	case message.Action == Files:
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+		updateStatus(message.HostName, message.PortNumber, message.Files)
 
-	case message.action == Upload:
-		localPeer.downloadFile(message.files[0], conn)
+	case message.Action == Upload:
+		localPeer.downloadFile(message.Files[0], conn)
 
-	case message.action == Download:
-		localPeer.uploadFile(message.hostName, message.portNumber, message.files[0])
+	case message.Action == Download:
+		localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
 
-	case message.action == Have:
-		updateHaveStatus(message.hostName, message.portNumber, message.files[0])
+	case message.Action == Have:
+		updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
 	}
 }
 
