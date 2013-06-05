@@ -34,10 +34,10 @@ public class Test {
 
 		testJoinLeaveMultiple();
 		
-		testNetworkDoubleJoin();
-		testNetworkDoubleLeave();
-		
-		testInsert("oi");
+//		testNetworkDoubleJoin();
+//		testNetworkDoubleLeave();
+////		
+//		testInsert("oi");
 	}
 
 	public static void testSingleJoin() {

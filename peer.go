@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net"
 	"os"
@@ -18,9 +19,10 @@ type Peer struct {
 
 func (peer *Peer) insert(fileName string) {
 	if _, ok := status.status["local"].files[fileName]; ok {
+		fmt.Printf("Not inserting: %s \n\n", fileName)
 		return
 	}
-
+	fmt.Printf("Inserting: %s \n\n", fileName)
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -30,7 +32,7 @@ func (peer *Peer) insert(fileName string) {
 	chunk := 0
 	p := 0
 	max := math.Max(float64(peer.peers.numPeers), float64(numChunks))
-
+	fmt.Printf("%d: %d : %d \n\n", int(max), peer.peers.numPeers, numChunks)
 	for i := 0; i <= int(max); i++ {
 		if chunk == numChunks {
 			chunk = 0
@@ -42,7 +44,9 @@ func (peer *Peer) insert(fileName string) {
 		if nextPeer.host == peer.host && nextPeer.port == peer.port {
 			continue
 		}
+		fmt.Println("one")
 		if nextPeer.currentState == Connected {
+			fmt.Println("three")
 			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
 			chunk += 1
 			p += 1
@@ -80,6 +84,9 @@ func (peer *Peer) join() {
 }
 
 func (peer *Peer) leave() {
+	peer.currentState = Disconnected
+	peer.peers.numPeers = 0
+
 	files := status.status["local"].files
 	for file := range files {
 		for chunk := range files[file].Chunks {
@@ -98,7 +105,6 @@ func (peer *Peer) leave() {
 }
 
 func (peer *Peer) reset() {
-	peer.currentState = Disconnected
 	for peer := range status.status {
 		if peer != "local" {
 			delete(status.status, peer)
@@ -128,7 +134,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 			return
 		}
 	}
-
+	fmt.Println(file)
 	err := tcpConn.SetReadBuffer(ChunkSize)
 	checkError(err)
 
@@ -145,10 +151,6 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
-	writeOffset := int64(file.Chunks[1] * ChunkSize)
-	_, err = localFile.WriteAt(bytes.Trim(readBuffer, "\x00"), writeOffset)
-	checkError(err)
-
 	if _, ok := status.status["local"].files[file.FileName]; !ok {
 		chunks := make([]int, file.Chunks[0])
 		for chunk := range chunks {
@@ -162,6 +164,10 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	}
 
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
+	writeOffset := int64(file.Chunks[1] * ChunkSize)
+	_, err = localFile.WriteAt(bytes.Trim(readBuffer, "\x00"), writeOffset)
+	checkError(err)
+
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
 	fileList := []File{file}
@@ -191,6 +197,7 @@ func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string,
 	writeBuffer := make([]byte, ChunkSize)
 	readOffset := int64(chunk * ChunkSize)
 	fileReading, err := os.Open(fileName)
+	checkError(err)
 
 	defer func() {
 		if err := fileReading.Close(); err != nil {

@@ -16,12 +16,12 @@ var status Status
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>\n", os.Args[0])
 		os.Exit(1)
 	}
 
 	if !strings.Contains(os.Args[1], ":") {
-		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>\n", os.Args[0])
 		os.Exit(1)
 	}
 	addr := os.Args[1]
@@ -30,13 +30,14 @@ func main() {
 	hostName := addrArr[0]
 	portNumber, err := strconv.Atoi(addrArr[1])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <host:port>\n", os.Args[0])
 		os.Exit(1)
 	}
 
 	if _, err := os.Stat("files"); os.IsNotExist(err) {
 		os.Mkdir("files", 0777)
 	}
+	checkError(err)
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", addr)
 	checkError(err)
@@ -101,16 +102,13 @@ func sendMessage(hostName string, portNumber int, msg []byte) error {
 
 	var conn *net.TCPConn
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
+		localPeer.peers.disconnectPeer(hostName, portNumber)
+	}
 
 	_, err = conn.Write(msg)
 	if err != nil {
-		p, err := localPeer.peers.getPeer(hostName, portNumber)
-		if err == nil {
-			if p.currentState == Connected {
-				decrementPeerReplication(hostName, portNumber)
-			}
-			localPeer.peers.disconnectPeer(hostName, portNumber)
-		}
+		localPeer.peers.disconnectPeer(hostName, portNumber)
 	}
 
 	conn.Close()
@@ -136,17 +134,16 @@ func handleMessage(conn *net.TCPConn) {
 	checkError(err)
 
 	message := decodeMessage(jsonMessage)
-	fmt.Printf("%s \n", message)
 	switch {
 
 	// interface messages
 	case message.Action == Join:
 		var response []byte
 		if localPeer.currentState == Connected {
-			fmt.Println("not joining")
+			fmt.Printf("Not joining: %s \n\n", message)
 			response = encodeError(ErrWarning)
 		} else {
-			fmt.Println("joining")
+			fmt.Printf("Joining: %s %d %d %d \n\n", message, message.Action, Join, Files)
 			localPeer.join()
 			response = encodeError(ErrOK)
 		}
@@ -155,10 +152,10 @@ func handleMessage(conn *net.TCPConn) {
 	case message.Action == Leave:
 		var response []byte
 		if localPeer.currentState == Disconnected {
-			fmt.Println("not leaving")
+			fmt.Printf("Not Leaving: %s \n\n", message)
 			response = encodeError(ErrWarning)
 		} else {
-			fmt.Println("leaving")
+			fmt.Printf("Leaving: %s \n\n", message)
 			localPeer.leave()
 			response = encodeError(ErrOK)
 		}
@@ -185,47 +182,49 @@ func handleMessage(conn *net.TCPConn) {
 		io.Copy(dfile, sfile)
 
 	// peer messages
-	case message.Action == Add:
-		p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
-		if err == nil && p.currentState != Connected {
+	// only act when peer is connected
+	case localPeer.currentState == Connected:
+		switch {
+		case message.Action == Add:
+			p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
+			if err == nil && p.currentState != Connected {
+				fmt.Printf("Connecting: %s \n\n", message)
+				localPeer.peers.connectPeer(message.HostName, message.PortNumber)
+				updateStatus(message.HostName, message.PortNumber, message.Files)
+				localPeer.sendFileList(message.HostName, message.PortNumber)
+			}
+
+		case message.Action == Remove:
+			p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
+			if err == nil && p.currentState != Disconnected {
+				fmt.Printf("Disconnecting: %s \n\n", message)
+				localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
+				decrementPeerReplication(message.HostName, message.PortNumber)
+			}
+
+		case message.Action == Files:
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber)
 			updateStatus(message.HostName, message.PortNumber, message.Files)
-			localPeer.sendFileList(message.HostName, message.PortNumber)
+
+		case message.Action == Upload:
+			fmt.Printf("Downloading: %s \n\n", message)
+			localPeer.downloadFile(message.Files[0], conn)
+
+		case message.Action == Download:
+			fmt.Printf("Uploading: %s \n\n", message)
+			localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
+
+		case message.Action == Have:
+			updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
 		}
-
-	case message.Action == Remove:
-		p, err := localPeer.peers.getPeer(message.HostName, message.PortNumber)
-		if err == nil && p.currentState != Disconnected {
-			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
-			decrementPeerReplication(message.HostName, message.PortNumber)
-		}
-
-	case message.Action == Files:
-		localPeer.peers.connectPeer(message.HostName, message.PortNumber)
-		updateStatus(message.HostName, message.PortNumber, message.Files)
-
-	case message.Action == Upload:
-		fmt.Printf("Downloading: %s \n\n", message)
-		localPeer.downloadFile(message.Files[0], conn)
-
-	case message.Action == Download:
-		fmt.Printf("Uploading: %s \n\n", message)
-		localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
-
-	case message.Action == Have:
-		updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
 	}
 }
 
 func checkError(err error) {
 	if err != nil {
 		if err == io.EOF {
-
-		} else if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-
-		} else {
-
+			return
 		}
-
+		fmt.Println(err)
 	}
 }

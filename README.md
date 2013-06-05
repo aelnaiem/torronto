@@ -7,10 +7,10 @@ _Start testing_
 
 `./torronto <hostName>:<portNumber>`
 
-* error checking
 * return error codes for API
 * doesn't leave sometimes when it should
-* sending empty file list on remove sometimes? random
+* race condition between leaving and downloading a file.
+* make sure it doesn't try to insert a big file until that file is done being copied over
 
 ## Torronto Messaging Documentation
 
