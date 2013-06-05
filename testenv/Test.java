@@ -36,6 +36,8 @@ public class Test {
 		
 		testNetworkDoubleJoin();
 		testNetworkDoubleLeave();
+		
+		testInsert("oi");
 	}
 
 	public static void testSingleJoin() {
@@ -102,6 +104,22 @@ public class Test {
 		testNetworkLeave();		
 	}
 	
+	public static void testInsert(String file) {
+		System.out.println("Inserting a file in peer 1");
+		String insertMsg = createInsertMessage(file).toString();
+		testNetworkJoin();		
+		
+		res = Message(peerOne, insertMsg);
+		System.out.println(res);
+		System.out.println();
+
+		System.out.println("Inserting the same file in peer 1");
+		res = Message(peerOne, insertMsg);
+		System.out.println(res);
+		System.out.println();
+	}
+	
+	
 	public static String Message(Peer peer, String msgString) {
 		try {
 			Socket socket = new Socket(peer.host, peer.port);
@@ -146,11 +164,19 @@ public class Test {
 		return leaveMessage;
 	}
 
+	public static JsonObject createQueryMessage(){
+		JsonObject queryMessage = new JsonObject();
+		queryMessage.addProperty("HostName", hostName);
+		queryMessage.addProperty("PortNumber", portNumber);
+		queryMessage.addProperty("Action", 2);
+		return queryMessage;
+	}
+	
 	public static JsonObject createInsertMessage(String f){
 		JsonObject insertMessage = new JsonObject();
 		insertMessage.addProperty("HostName", hostName);
 		insertMessage.addProperty("PortNumber", portNumber);
-		insertMessage.addProperty("Action", 2);
+		insertMessage.addProperty("Action", 3);
 
 		JsonObject file = new JsonObject();
 		file.addProperty("fileName", f);
@@ -159,14 +185,6 @@ public class Test {
 		insertMessage.add("files", files);
 
 		return insertMessage;
-	}
-
-	public static JsonObject createQueryMessage(){
-		JsonObject queryMessage = new JsonObject();
-		queryMessage.addProperty("HostName", hostName);
-		queryMessage.addProperty("PortNumber", portNumber);
-		queryMessage.addProperty("Action", 3);
-		return queryMessage;
 	}
 
 }
