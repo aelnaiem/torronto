@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"math"
 	"net"
 	"os"
@@ -161,7 +160,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 			Chunks:   chunks,
 		}
 	}
-	fmt.Printf("downloading: %s\n\n", status.status["local"].files[file.FileName])
+
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 

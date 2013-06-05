@@ -26,22 +26,22 @@ public class Test {
 		peerOne = new Peer("127.0.0.1", 10001);
 		peerTwo = new Peer("127.0.0.1", 10002);
 		
-//		testSingleJoin();
-//		testSingleLeave();
-//		
-//		testNetworkJoin();
-//		testNetworkLeave();
+		testSingleJoin();
+		testSingleLeave();
 		
-		try {
-			testJoinLeaveMultiple();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		testNetworkJoin();
+		testNetworkLeave();
+
+		testJoinLeaveMultiple();
+		
+		testNetworkDoubleJoin();
+		testNetworkDoubleLeave();
+		
+		testInsert("oi");
 	}
 
 	public static void testSingleJoin() {
-		System.out.println("Peer 1 joins network");
+		System.out.println("Peer 1 joins the network");
 		String joinMsg = createJoinMessage().toString();
 		
 		res = Message(peerOne, joinMsg);
@@ -50,7 +50,7 @@ public class Test {
 	}
 	
 	public static void testSingleLeave() {
-		System.out.println("Peer 1 leaves network");
+		System.out.println("Peer 1 leaves the network");
 		String leaveMsg = createLeaveMessage().toString();
 		
 		res = Message(peerOne, leaveMsg);
@@ -59,7 +59,7 @@ public class Test {
 	}
 	
 	public static void testNetworkJoin() {
-		System.out.println("Peer 1 and 2 join network");
+		System.out.println("Peer 1 and 2 join the network");
 		String joinMsg = createJoinMessage().toString();
 		
 		res = Message(peerOne, joinMsg);
@@ -71,30 +71,52 @@ public class Test {
 	}
 	
 	public static void testNetworkLeave() {
-		System.out.println("Peer 1 and 2 leave network");
+		System.out.println("Peer 1 and 2 leave the network");
 		String leaveMsg = createLeaveMessage().toString();
 		
 		res = Message(peerOne, leaveMsg);
 		System.out.println(res);
 		
-		res = Message(peerOne, leaveMsg);
+		res = Message(peerTwo, leaveMsg);
 		System.out.println(res);
 		System.out.println();
 	}
 	
-	public static void testJoinLeaveMultiple() throws InterruptedException {	
-		System.out.println("Peer 1 and 2 leave network multiple times");
+	public static void testJoinLeaveMultiple() {	
+		System.out.println("Peer 1 and 2 join and leave the network multiple times");
 		testNetworkJoin();
-		Thread.sleep(1000);		
 		testNetworkLeave();
-		Thread.sleep(1000);
-		testNetworkJoin();
-		Thread.sleep(1000);		
+		testNetworkJoin();	
 		testNetworkLeave();
-		Thread.sleep(1000);
 		testSingleJoin();
-		Thread.sleep(1000);		
 		testSingleLeave();
+	}
+	
+	public static void testNetworkDoubleJoin() {
+		System.out.println("Peer 1 and 2 join the network twice");
+		testNetworkJoin();
+		testNetworkJoin();		
+	}
+	
+	public static void testNetworkDoubleLeave() {
+		System.out.println("Peer 1 and 2 leave the network twice");
+		testNetworkLeave();
+		testNetworkLeave();		
+	}
+	
+	public static void testInsert(String file) {
+		System.out.println("Inserting a file in peer 1");
+		String insertMsg = createInsertMessage(file).toString();
+		testNetworkJoin();		
+		
+		res = Message(peerOne, insertMsg);
+		System.out.println(res);
+		System.out.println();
+
+		System.out.println("Inserting the same file in peer 1");
+		res = Message(peerOne, insertMsg);
+		System.out.println(res);
+		System.out.println();
 	}
 	
 	
@@ -142,11 +164,19 @@ public class Test {
 		return leaveMessage;
 	}
 
+	public static JsonObject createQueryMessage(){
+		JsonObject queryMessage = new JsonObject();
+		queryMessage.addProperty("HostName", hostName);
+		queryMessage.addProperty("PortNumber", portNumber);
+		queryMessage.addProperty("Action", 2);
+		return queryMessage;
+	}
+	
 	public static JsonObject createInsertMessage(String f){
 		JsonObject insertMessage = new JsonObject();
 		insertMessage.addProperty("HostName", hostName);
 		insertMessage.addProperty("PortNumber", portNumber);
-		insertMessage.addProperty("Action", 2);
+		insertMessage.addProperty("Action", 3);
 
 		JsonObject file = new JsonObject();
 		file.addProperty("fileName", f);
@@ -155,14 +185,6 @@ public class Test {
 		insertMessage.add("files", files);
 
 		return insertMessage;
-	}
-
-	public static JsonObject createQueryMessage(){
-		JsonObject queryMessage = new JsonObject();
-		queryMessage.addProperty("HostName", hostName);
-		queryMessage.addProperty("PortNumber", portNumber);
-		queryMessage.addProperty("Action", 3);
-		return queryMessage;
 	}
 
 }
