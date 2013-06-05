@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"math"
 	"net"
 	"os"
@@ -19,10 +19,9 @@ type Peer struct {
 
 func (peer *Peer) insert(fileName string) {
 	if _, ok := status.status["local"].files[fileName]; ok {
-		fmt.Printf("Not inserting: %s \n\n", fileName)
 		return
 	}
-	fmt.Printf("Inserting: %s \n\n", fileName)
+
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -30,11 +29,10 @@ func (peer *Peer) insert(fileName string) {
 
 	numChunks := int(math.Floor(float64(info.Size())/ChunkSize + 1))
 	max := math.Max(float64(peer.peers.numPeers), float64(numChunks))
-	fmt.Printf("number of peers %d\n\n", peer.peers.numPeers)
+
 	chunk := 0
 	p := 0
 	for i := 0; i <= int(max)+1; {
-		fmt.Printf("P=%d, peers=%s\n\n", p, peer.peers)
 		if chunk == numChunks {
 			chunk = 0
 		}
@@ -42,15 +40,12 @@ func (peer *Peer) insert(fileName string) {
 			p = 0
 		}
 		nextPeer := peer.peers.peers[p]
-		fmt.Println(nextPeer)
 		if nextPeer.host == peer.host && nextPeer.port == peer.port {
 			p += 1
 			i += 1
 			continue
 		}
-		fmt.Println(nextPeer)
 		if nextPeer.currentState == Connected {
-			fmt.Println("three")
 			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
 			chunk += 1
 		}
@@ -142,7 +137,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 			return
 		}
 	}
-	fmt.Println(file)
+
 	err := tcpConn.SetReadBuffer(ChunkSize)
 	checkError(err)
 

@@ -68,11 +68,10 @@ func (peers *Peers) connectPeer(hostName string, portNumber int, files []File) {
 	if peer.currentState != Connected {
 		updateStatus(hostName, portNumber, files)
 		peers.numPeers += 1
-		fmt.Printf("Number of peers: %d (inc)\n\n", peers.numPeers)
+		// fmt.Printf("Number of peers: %d (inc)\n\n", peers.numPeers)
 	}
-	fmt.Printf("old state: %d\n", peer.currentState)
+
 	peer.currentState = Connected
-	fmt.Printf("new state: %d\n", peer.currentState)
 	return
 }
 
@@ -83,7 +82,7 @@ func (peers *Peers) disconnectPeer(hostName string, portNumber int) {
 	if peer.currentState == Connected {
 		decrementPeerReplication(hostName, portNumber)
 		peers.numPeers -= 1
-		fmt.Printf("Number of peers: %d (dec)\n\n", peers.numPeers)
+		// fmt.Printf("Number of peers: %d (dec)\n\n", peers.numPeers)
 	}
 
 	peer.currentState = Disconnected
