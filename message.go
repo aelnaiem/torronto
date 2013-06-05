@@ -1,22 +1,29 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 )
 
 type Message struct {
-	hostName   string
-	portNumber int
-	action     int
-	files      []File
+	HostName   string
+	PortNumber int
+	Action     int
+	Files      []File
+}
+
+type Err struct {
+	HostName   string
+	PortNumber int
+	Code       int
 }
 
 func encodeMessage(hostName string, portNumber int, action int, files []File) []byte {
 	message := Message{
-		hostName:   hostName,
-		portNumber: portNumber,
-		action:     action,
-		files:      files,
+		HostName:   hostName,
+		PortNumber: portNumber,
+		Action:     action,
+		Files:      files,
 	}
 	jsonMessage, err := json.Marshal(message)
 	checkError(err)
@@ -31,10 +38,24 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 
 func decodeMessage(jsonMessage []byte) Message {
 	var message Message
+	jsonMessage = bytes.Trim(jsonMessage, "\x00")
+
 	err := json.Unmarshal(jsonMessage, &message)
 	checkError(err)
 
 	return message
+}
+
+func encodeError(code int) []byte {
+	errObject := Err{
+		HostName:   localPeer.host,
+		PortNumber: localPeer.port,
+		Code:       code,
+	}
+	errMessage, err := json.Marshal(errObject)
+	checkError(err)
+
+	return errMessage
 }
 
 const (
@@ -44,8 +65,8 @@ const (
 	Insert   = iota
 	Add      = iota
 	Remove   = iota
-	Have     = iota
 	Files    = iota
 	Upload   = iota
 	Download = iota
+	Have     = iota
 )

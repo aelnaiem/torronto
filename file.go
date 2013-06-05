@@ -7,11 +7,14 @@ import (
 )
 
 type File struct {
-	fileName string
-	chunks   []int
+	FileName string
+	Chunks   []int
 }
 
 func addLocalFile(path string, info os.FileInfo, err error) error {
+	if info.IsDir() {
+		return nil
+	}
 	numberOfChunks := int(math.Ceil(float64(info.Size()) / ChunkSize))
 	chunks := make([]int, numberOfChunks)
 	for chunk := range chunks {
@@ -19,9 +22,10 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 	}
 
 	file := File{
-		fileName: path,
-		chunks:   chunks,
+		FileName: path,
+		Chunks:   chunks,
 	}
+
 	trackNewFile(file)
 	return nil
 }
@@ -29,4 +33,5 @@ func addLocalFile(path string, info os.FileInfo, err error) error {
 func makeFileList() {
 	err := filepath.Walk("files", addLocalFile)
 	checkError(err)
+	return
 }

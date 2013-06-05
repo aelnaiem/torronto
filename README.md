@@ -8,7 +8,10 @@ _Start testing_
 `./torronto <hostName>:<portNumber>`
 
 * error checking
-* copy a file on insert interface message
+* return error codes for API
+
+Documentation
+* testing plan
 
 ## Torronto Messaging Documentation
 
@@ -17,7 +20,7 @@ _Using [json](www.json.org) for data interchange_
 _Each message is a header with some max size_
 
 ## Interface Messaging
-_We tell the node to join the network._
+_We tell the node git o join the network._
 ### Joining network
 ```
 {
