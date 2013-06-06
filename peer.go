@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	// "fmt"
+	"fmt"
 	"math"
 	"net"
 	"os"
 	"path"
+	// "time"
 )
 
 type Peer struct {
@@ -18,10 +19,20 @@ type Peer struct {
 }
 
 func (peer *Peer) insert(fileName string) {
+	// time.Sleep(500 * time.Millisecond)
 	if _, ok := status.status["local"].files[fileName]; ok {
 		return
 	}
+	reader, err := os.Open(fileName)
+	for {
+		if err == nil {
+			reader.Close()
+			break
+		}
+	}
 
+	fmt.Println(fileName)
+	fmt.Println(status)
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -113,7 +124,10 @@ func (peer *Peer) reset() {
 			delete(status.status, peer)
 		}
 	}
+	// Clear replication data
 	status.replication = make(map[string][][]int)
+
+	// Update replication data for file chunks available locally
 	files := status.status["local"].files
 	for file := range files {
 		for chunk := range files[file].Chunks {
@@ -133,9 +147,22 @@ func (peer Peer) sendFileList(hostName string, portNumber int) {
 
 func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	if f, ok := status.status["local"].files[file.FileName]; ok {
+		//fmt.Printf("FILE EXISTS: %s: %d\n\n", file.FileName, file.Chunks[1])
 		if f.Chunks[file.Chunks[1]] == 1 {
+			//fmt.Printf("CHUNK EXISTS RETURN NOW: %s: %d\n\n", file.FileName, file.Chunks[1])
 			return
 		}
+	} else {
+		chunks := make([]int, file.Chunks[0])
+		for chunk := range chunks {
+			chunks[chunk] = 0
+		}
+		chunks[file.Chunks[1]] = 1
+		status.status["local"].files[file.FileName] = File{
+			FileName: file.FileName,
+			Chunks:   chunks,
+		}
+		//fmt.Printf("FILE DIDNT EXIST: %s\n\n", status.status["local"].files[file.FileName])
 	}
 
 	err := tcpConn.SetReadBuffer(ChunkSize)
@@ -154,18 +181,8 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
-	if _, ok := status.status["local"].files[file.FileName]; !ok {
-		chunks := make([]int, file.Chunks[0])
-		for chunk := range chunks {
-			chunks[chunk] = 0
-		}
-		chunks[file.Chunks[1]] = 1
-		status.status["local"].files[file.FileName] = File{
-			FileName: file.FileName,
-			Chunks:   chunks,
-		}
-	}
-
+	//fmt.Printf("Downloading: %s; ChunkNumber: %d; Total Chunks: %d \n\n", file.FileName, file.Chunks[1], file.Chunks[0])
+	//fmt.Printf("LOCAL %s \n\n", status.status["local"])
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(bytes.Trim(readBuffer, "\x00"), writeOffset)
