@@ -1,6 +1,7 @@
 package main
 
 import (
+	// "fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -148,9 +149,13 @@ func updateStatus(hostName string, portNumber int, files []File) {
 	}
 
 	for _, file := range files {
-		status.status[fullName].files[file.FileName] = file
 		for chunk := range file.Chunks {
 			if file.Chunks[chunk] == 1 {
+				if _, ok := status.status[fullName].files[file.FileName]; ok {
+					if status.status[fullName].files[file.FileName].Chunks[chunk] == 1 {
+						return
+					}
+				}
 				incrementChunkReplication(file.FileName, chunk, len(file.Chunks))
 				chunks := make([]int, 2)
 				chunks[0], chunks[1] = len(file.Chunks), chunk
@@ -161,6 +166,7 @@ func updateStatus(hostName string, portNumber int, files []File) {
 				localPeer.requestFile(f)
 			}
 		}
+		status.status[fullName].files[file.FileName] = file
 	}
 	return
 }
@@ -176,10 +182,13 @@ func trackNewFile(file File) {
 	for i := 0; i <= MaxPeers; i++ {
 		status.replication[file.FileName][i] = make([]int, len(file.Chunks))
 		for j := 0; j < len(file.Chunks); j++ {
-			status.replication[file.FileName][i][j] = 0
+			if i == 1 {
+				status.replication[file.FileName][i][j] = 1
+			} else {
+				status.replication[file.FileName][i][j] = 0
+			}
 		}
 	}
-	status.replication[file.FileName][1] = file.Chunks
 }
 
 func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) {
@@ -193,7 +202,7 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 		}
 	}
 
-	status.mu.Lock()
+	// status.mu.Lock()
 	replicationLevel := 0
 	for i := MaxPeers; i >= 0; i-- {
 		if status.replication[fileName][i][chunkNumber] == 1 {
@@ -202,9 +211,15 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 		}
 	}
 
+	// fmt.Printf("Increment: %s; ReplicationLvl: %d; ChunkNumber: %d \n", fileName, replicationLevel, chunkNumber)
+	// if replicationLevel == MaxPeers {
+	// 	fmt.Printf("THIS IS A PROBLEM! %s; %d\n\n", fileName, chunkNumber)
+	// } else {
 	status.replication[fileName][replicationLevel+1][chunkNumber] = 1
 	status.replication[fileName][replicationLevel][chunkNumber] = 0
-	status.mu.Unlock()
+	// }
+
+	// status.mu.Unlock()
 	return
 }
 
@@ -233,8 +248,7 @@ func decrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 			status.replication[fileName][i] = make([]int, numChunks)
 		}
 	}
-
-	status.mu.Lock()
+	// status.mu.Lock()
 	replicationLevel := 0
 	for i := 0; i <= MaxPeers; i++ {
 		if status.replication[fileName][i][chunkNumber] == 1 {
@@ -242,10 +256,13 @@ func decrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 			break
 		}
 	}
-
+	// fmt.Printf("Decrement: %s; ReplicationLvl: %d; ChunkNumber: %d \n\n", fileName, replicationLevel, chunkNumber)
+	// if replicationLevel == 0 {
+	// 	fmt.Printf("THIS IS A PROBLEM! %s; %d\n\n", fileName, chunkNumber)
+	// } else {
 	status.replication[fileName][replicationLevel][chunkNumber] = 0
 	status.replication[fileName][replicationLevel-1][chunkNumber] = 1
-
-	status.mu.Unlock()
+	// }
+	// status.mu.Unlock()
 	return
 }

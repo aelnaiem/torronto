@@ -3,4 +3,7 @@ all:
 	rm -f files/t*
 	rm -f files/h*
 	rm -f files/v*
-	./torronto 127.0.0.1:1004
+	rm -f files/qnc.jpg
+	clear
+	clear
+	./torronto 127.0.0.1:10004
