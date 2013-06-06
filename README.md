@@ -1,8 +1,7 @@
 torronto - A BitTorrent Implementation in Go
 ============================================
 ## TODO
-* race condition between leaving and downloading a file.
-* bigger tests
+* insert large file only sending half the file
 
 ## Torronto Messaging Documentation
 

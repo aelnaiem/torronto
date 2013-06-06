@@ -15,8 +15,7 @@ public class Test {
 	public static ServerSocket server;
 	
 	public static String res;
-	public static Peer peerOne;
-	public static Peer peerTwo;
+	public static Peer peerOne, peerTwo, peerThree, peerFour, peerFive;
 	public static void main(String[] args) {
 		try {
 			server = new ServerSocket(portNumber);
@@ -25,92 +24,90 @@ public class Test {
 		}
 		peerOne = new Peer("127.0.0.1", 10001);
 		peerTwo = new Peer("127.0.0.1", 10002);
+		peerThree = new Peer("127.0.0.1", 10003);
+		peerFour = new Peer("127.0.0.1", 10004);
+		peerFive = new Peer("127.0.0.1", 10005);
 		
-		testSingleJoin();
-		testSingleLeave();
+		Peer[] peers = {peerOne, peerTwo, peerThree, peerFour, peerFive};
+		Peer[] peersOne = {peerOne, peerThree, peerFour};
+		Peer[] peersTwo = {peerTwo, peerThree, peerFive};
 		
-		testNetworkJoin();
-		testNetworkLeave();
+		testSingleJoin(peerOne);
+		testSingleLeave(peerOne);
+		
+		testNetworkJoin(peers);
+		testNetworkLeave(peers);
 
-		testJoinLeaveMultiple();
+		testJoinLeaveMultiple(peerOne, peersOne, peersTwo);
 		
-		testNetworkDoubleJoin();
-		testNetworkDoubleLeave();
-	
-		testInsert("oi");
-		testInsert("mia");
+		testNetworkDoubleJoin(peerOne);
+		testNetworkDoubleLeave(peerOne);
+		
+		testSingleJoin(peerOne);
+		testInsert("oi", peers);
+		testInsert("mia", peers);
 		
 		testQuery();
 	}
 
-	public static void testSingleJoin() {
-		System.out.println("Peer 1 joins the network");
+	public static void testSingleJoin(Peer peer) {
+		System.out.println("Peer " + peer.port+ " joins the network");
 		String joinMsg = createJoinMessage().toString();
 		
-		res = Message(peerOne, joinMsg);
+		res = Message(peer, joinMsg);
 		System.out.println(res);
 		System.out.println();
 	}
 	
-	public static void testSingleLeave() {
-		System.out.println("Peer 1 leaves the network");
+	public static void testSingleLeave(Peer peer) {
+		System.out.println("Peer " + peer.port + " leaves the network");
 		String leaveMsg = createLeaveMessage().toString();
 		
-		res = Message(peerOne, leaveMsg);
+		res = Message(peer, leaveMsg);
 		System.out.println(res);
 		System.out.println();
 	}
 	
-	public static void testNetworkJoin() {
-		System.out.println("Peer 1 and 2 join the network");
-		String joinMsg = createJoinMessage().toString();
-		
-		res = Message(peerOne, joinMsg);
-		System.out.println(res);
-		
-		res = Message(peerTwo, joinMsg);
-		System.out.println(res);
-		System.out.println();
+	public static void testNetworkJoin(Peer[] peers) {
+		System.out.println("All peers join the network");
+		for (int i = 0; i < peers.length; i ++) {
+			testSingleJoin(peers[i]);
+		}
 	}
 	
-	public static void testNetworkLeave() {
-		System.out.println("Peer 1 and 2 leave the network");
-		String leaveMsg = createLeaveMessage().toString();
-		
-		res = Message(peerOne, leaveMsg);
-		System.out.println(res);
-		
-		res = Message(peerTwo, leaveMsg);
-		System.out.println(res);
-		System.out.println();
+	public static void testNetworkLeave(Peer[] peers) {
+		System.out.println("All peers join the network");
+		for (int i = 0; i < peers.length; i ++) {
+			testSingleJoin(peers[i]);
+		}
 	}
 	
-	public static void testJoinLeaveMultiple() {	
+	public static void testJoinLeaveMultiple(Peer peer, Peer[] peersOne, Peer[] peersTwo) {	
 		System.out.println("Peer 1 and 2 join and leave the network multiple times");
-		testNetworkJoin();
-		testNetworkLeave();
-		testNetworkJoin();	
-		testNetworkLeave();
-		testSingleJoin();
-		testSingleLeave();
+		testNetworkJoin(peersOne);
+		testNetworkJoin(peersTwo);
+		testNetworkLeave(peersOne);
+		testSingleJoin(peer);
+		testNetworkLeave(peersTwo);
+		testSingleLeave(peer);
 	}
 	
-	public static void testNetworkDoubleJoin() {
+	public static void testNetworkDoubleJoin(Peer peer) {
 		System.out.println("Peer 1 and 2 join the network twice");
-		testNetworkJoin();
-		testNetworkJoin();		
+		testSingleJoin(peer);
+		testSingleJoin(peer);		
 	}
 	
-	public static void testNetworkDoubleLeave() {
+	public static void testNetworkDoubleLeave(Peer peer) {
 		System.out.println("Peer 1 and 2 leave the network twice");
-		testNetworkLeave();
-		testNetworkLeave();		
+		testSingleLeave(peer);
+		testSingleLeave(peer);		
 	}
 	
-	public static void testInsert(String file) {
+	public static void testInsert(String file, Peer[] peers) {
 		System.out.println("Inserting a file in peer 1 " + file);
 		String insertMsg = createInsertMessage(file).toString();
-		testNetworkJoin();		
+		testNetworkJoin(peers);		
 		
 		res = Message(peerOne, insertMsg);
 		System.out.println(res);
