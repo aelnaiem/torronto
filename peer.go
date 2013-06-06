@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 	"path"
-	// "time"
+	"time"
 )
 
 type Peer struct {
@@ -19,7 +19,7 @@ type Peer struct {
 }
 
 func (peer *Peer) insert(fileName string) {
-	// time.Sleep(500 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	if _, ok := status.status["local"].files[fileName]; ok {
 		return
 	}
@@ -31,8 +31,6 @@ func (peer *Peer) insert(fileName string) {
 		}
 	}
 
-	fmt.Println(fileName)
-	fmt.Println(status)
 	info, err := os.Stat(fileName)
 	checkError(err)
 
@@ -43,23 +41,22 @@ func (peer *Peer) insert(fileName string) {
 
 	chunk := 0
 	p := 0
-	for i := 0; i <= int(max)+1; {
+	fmt.Printf("Number of peers: %d, Max: %d", peer.peers.numPeers, max)
+	for i := 0; i < int(max); {
 		if chunk == numChunks {
 			chunk = 0
 		}
-		if p == peer.peers.numPeers+1 {
+		if p == peer.peers.numPeers {
 			p = 0
 		}
 		nextPeer := peer.peers.peers[p]
 		if nextPeer.host == peer.host && nextPeer.port == peer.port {
 			p += 1
-			i += 1
 			continue
 		}
-		if nextPeer.currentState == Connected {
-			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
-			chunk += 1
-		}
+		fmt.Printf("file: %d; size: %d; chunk %d i: %d;\n\n", fileName, numChunks, chunk, i)
+		peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
+		chunk += 1
 		p += 1
 		i += 1
 	}
@@ -181,8 +178,6 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
-	//fmt.Printf("Downloading: %s; ChunkNumber: %d; Total Chunks: %d \n\n", file.FileName, file.Chunks[1], file.Chunks[0])
-	//fmt.Printf("LOCAL %s \n\n", status.status["local"])
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(bytes.Trim(readBuffer, "\x00"), writeOffset)
@@ -192,8 +187,8 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 
 	fileList := []File{file}
 	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
+	fmt.Printf("File: %s; Offset: %d; Chunk: %d\n\n", file.FileName, writeOffset, file.Chunks[1])
 	sendToAll(haveMessage)
-
 	return
 }
 
