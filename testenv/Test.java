@@ -36,9 +36,9 @@ public class Test {
 		
 		testNetworkDoubleJoin();
 		testNetworkDoubleLeave();
-	
-		testInsert("oi");
-		testInsert("mia");
+		testNetworkJoin();
+		//testInsert("oi");
+		//testInsert("mia");
 		
 		testQuery();
 	}

@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	// "fmt"
+	"fmt"
 	"math"
 	"net"
 	"os"
@@ -20,6 +20,17 @@ type Peer struct {
 func (peer *Peer) insert(fileName string) {
 	if _, ok := status.status["local"].files[fileName]; ok {
 		return
+	}
+	fmt.Println("ruhoh")
+	reader, err := os.Open(fileName)
+	fmt.Println(err)
+	fmt.Println(fileName)
+	for {
+		if err == nil {
+			reader.Close()
+			break
+		}
+		fmt.Printf("ruhoh")
 	}
 
 	info, err := os.Stat(fileName)
