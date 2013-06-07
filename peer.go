@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"math"
 	"net"
 	"os"
@@ -36,12 +35,11 @@ func (peer *Peer) insert(fileName string) {
 
 	addLocalFile(fileName, info, nil)
 
-	numChunks := int(math.Floor(float64(info.Size())/ChunkSize + 1))
+	numChunks := int(math.Floor(float64(info.Size())/(ChunkSize+1) + 1))
 	max := math.Max(float64(peer.peers.numPeers), float64(numChunks))
 
 	chunk := 0
 	p := 0
-	fmt.Printf("Number of peers: %d, Max: %d", peer.peers.numPeers, max)
 	for i := 0; i < int(max); {
 		if chunk == numChunks {
 			chunk = 0
@@ -54,7 +52,6 @@ func (peer *Peer) insert(fileName string) {
 			p += 1
 			continue
 		}
-		fmt.Printf("file: %d; size: %d; chunk %d i: %d;\n\n", fileName, numChunks, chunk, i)
 		peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
 		chunk += 1
 		p += 1
@@ -187,7 +184,6 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 
 	fileList := []File{file}
 	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
-	fmt.Printf("File: %s; Offset: %d; Chunk: %d\n\n", file.FileName, writeOffset, file.Chunks[1])
 	sendToAll(haveMessage)
 	return
 }
