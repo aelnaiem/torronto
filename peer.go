@@ -180,7 +180,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
-	_, err = localFile.WriteAt(bytes.Trim(readBuffer, "\x00"), writeOffset)
+	_, err = localFile.WriteAt(bytes.TrimRight(readBuffer, "\x00"), writeOffset)
 	checkError(err)
 
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
