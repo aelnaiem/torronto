@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/howeyc/fsnotify"
 	"io"
@@ -65,6 +66,7 @@ func main() {
 
 	makeFileList()
 	go listenForFiles()
+	go listenForCommand()
 
 	listenForMessages(listener)
 }
@@ -88,6 +90,73 @@ func listenForFiles() {
 	}
 }
 
+func listenForCommand() {
+	for {
+		in := bufio.NewReader(os.Stdin)
+		s, err := in.ReadString('\n')
+		checkError(err)
+		input := strings.Split(s, " ")
+
+		if strings.Contains(input[0], "join") {
+			if localPeer.currentState == Connected {
+				fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrConnected)
+			} else {
+				fmt.Printf("Joining... \n")
+				localPeer.join()
+				fmt.Printf("Joined... \n")
+			}
+			fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrOK)
+		} else if strings.Contains(input[0], "leave") {
+			fmt.Printf("input: %s", input[0])
+			if localPeer.currentState == Disconnected {
+				fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrDisconnected)
+			} else {
+				fmt.Printf("Leaving.. \n")
+				localPeer.leave()
+				fmt.Printf("Left... \n")
+			}
+			fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrOK)
+		} else if strings.Contains(input[0], "query") {
+			if localPeer.currentState == Disconnected {
+				fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrDisconnected)
+			}
+			localPeer.query()
+		} else if strings.Contains(input[0], "insert") {
+			if localPeer.currentState == Disconnected {
+				fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrDisconnected)
+			} else {
+				src := strings.Trim(input[1], "\n")
+				dstArr := []string{"files", path.Base(src)}
+				dst := strings.Join(dstArr, "/")
+
+				fmt.Printf("Inserting File: %s into %s... \n", src, dst)
+				if _, ok := status.status["local"].files[dst]; ok {
+					fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrFileExists)
+				} else {
+
+					sfile, err := os.Open(src)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrFileMissing)
+					} else {
+						defer sfile.Close()
+
+						dfile, err := os.Create(dst)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrBadPermission)
+						} else {
+							defer dfile.Close()
+							io.Copy(dfile, sfile)
+
+							fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrOK)
+							fmt.Printf("Inserted... \n")
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 func listenForMessages(listener *net.TCPListener) {
 	for {
 		conn, err := listener.AcceptTCP()
@@ -99,7 +168,6 @@ func listenForMessages(listener *net.TCPListener) {
 func sendMessage(hostName string, portNumber int, msg []byte) error {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", net.JoinHostPort(hostName, strconv.Itoa(portNumber)))
 	checkError(err)
-
 	var conn *net.TCPConn
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
@@ -110,7 +178,6 @@ func sendMessage(hostName string, portNumber int, msg []byte) error {
 	if err != nil {
 		localPeer.peers.disconnectPeer(hostName, portNumber)
 	}
-
 	conn.Close()
 	conn = nil
 	return err
@@ -124,6 +191,7 @@ func sendToAll(msg []byte) {
 			}
 		}
 	}
+	return
 }
 
 func handleMessage(conn *net.TCPConn) {
@@ -170,11 +238,10 @@ func handleMessage(conn *net.TCPConn) {
 			sendMessage(message.HostName, message.PortNumber, response)
 			return
 		}
-		localPeer.query(message.HostName, message.PortNumber)
+		localPeer.query()
 		return
 
 	case message.Action == Insert:
-		//fmt.Printf("insert %s \n", message)
 		if localPeer.currentState == Disconnected {
 			response := encodeError(ErrDisconnected)
 			sendMessage(message.HostName, message.PortNumber, response)
@@ -211,6 +278,7 @@ func handleMessage(conn *net.TCPConn) {
 		response := encodeError(ErrOK)
 		sendMessage(message.HostName, message.PortNumber, response)
 		return
+
 	// peer messages
 	// only act when peer is connected
 	case localPeer.currentState == Connected:
@@ -218,18 +286,18 @@ func handleMessage(conn *net.TCPConn) {
 		case message.Action == Add:
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			localPeer.sendFileList(message.HostName, message.PortNumber)
-			//fmt.Printf("Connected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
+			fmt.Printf("Connected: %s:%d", message.HostName, message.PortNumber)
 			return
 
 		case message.Action == Remove:
 			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
-			//fmt.Printf("Disconnected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
+			fmt.Printf("Disconnected: %s:%d", message.HostName, message.PortNumber)
 			return
 
 		case message.Action == Files:
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			updateStatus(message.HostName, message.PortNumber, message.Files)
-			//fmt.Printf("Connected: %s \n\nPeer data: %d\n\n", message, localPeer.peers.peers)
+			fmt.Printf("Updated file list from: %s:%d", message.HostName, message.PortNumber)
 			return
 
 		case message.Action == Upload:
@@ -241,6 +309,7 @@ func handleMessage(conn *net.TCPConn) {
 			return
 		case message.Action == Have:
 			updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
+			fmt.Printf("Updated status that %s:%d Has file:chunk %s:%d", message.HostName, message.PortNumber, message.Files[0].FileName, message.Files[0].Chunks[1])
 			return
 		}
 	}

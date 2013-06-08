@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net"
 	"os"
@@ -41,10 +42,10 @@ func (peer *Peer) insert(fileName string) {
 	chunk := 0
 	p := 0
 	for i := 0; i < int(max); {
-		if chunk == numChunks {
+		if chunk >= numChunks {
 			chunk = 0
 		}
-		if p == peer.peers.numPeers {
+		if p >= peer.peers.numPeers {
 			p = 0
 		}
 		nextPeer := peer.peers.peers[p]
@@ -60,7 +61,7 @@ func (peer *Peer) insert(fileName string) {
 	return
 }
 
-func (peer Peer) query(hostName string, portNumber int) {
+func (peer Peer) query() {
 	fileArray := make([]string, 0, len(status.replication))
 	for file := range status.replication {
 		fileArray = append(fileArray, file)
@@ -75,14 +76,13 @@ func (peer Peer) query(hostName string, portNumber int) {
 	}
 	statusMessage, err := json.Marshal(query)
 	checkError(err)
-	sendMessage(hostName, portNumber, statusMessage)
+	fmt.Fprintf(os.Stderr, "Response: \n%s \n\n", statusMessage)
 	return
 }
 
 func (peer *Peer) join() {
 	peer.currentState = Connected
 	fileList := status.getFileList()
-
 	joinMessage := encodeMessage(peer.host, peer.port, Add, fileList)
 	sendToAll(joinMessage)
 	return
@@ -141,9 +141,7 @@ func (peer Peer) sendFileList(hostName string, portNumber int) {
 
 func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	if f, ok := status.status["local"].files[file.FileName]; ok {
-		//fmt.Printf("FILE EXISTS: %s: %d\n\n", file.FileName, file.Chunks[1])
 		if f.Chunks[file.Chunks[1]] == 1 {
-			//fmt.Printf("CHUNK EXISTS RETURN NOW: %s: %d\n\n", file.FileName, file.Chunks[1])
 			return
 		}
 	} else {
@@ -156,7 +154,6 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 			FileName: file.FileName,
 			Chunks:   chunks,
 		}
-		//fmt.Printf("FILE DIDNT EXIST: %s\n\n", status.status["local"].files[file.FileName])
 	}
 
 	err := tcpConn.SetReadBuffer(ChunkSize)
@@ -180,6 +177,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	_, err = localFile.WriteAt(bytes.TrimRight(readBuffer, "\x00"), writeOffset)
 	checkError(err)
 
+	fmt.Printf("Downloaded file %s:%d from: %s:%d", file.FileName, file.Chunks[1])
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
 	fileList := []File{file}
@@ -234,6 +232,7 @@ func (peer Peer) requestFile(file File) {
 		}
 	}
 	fileList := []File{file}
+	fmt.Printf("Requesting file %s:%d", file.FileName, file.Chunks[1])
 	downloadMessage := encodeMessage(peer.host, peer.port, Download, fileList)
 	sendToAll(downloadMessage)
 	return
