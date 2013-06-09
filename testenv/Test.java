@@ -15,7 +15,8 @@ public class Test {
 	public static ServerSocket server;
 	
 	public static String res;
-	public static Peer peerOne, peerTwo, peerThree, peerFour, peerFive;
+	public static Peer peerOne, peerTwo, peerThree, peerFour, peerFive, peerSix;
+	
 	public static void main(String[] args) {
 		try {
 			server = new ServerSocket(portNumber);
@@ -23,31 +24,34 @@ public class Test {
 			return;
 		}
 		peerOne = new Peer("127.0.0.1", 10001);
-		peerTwo = new Peer("127.0.0.1", 10002);
-		peerThree = new Peer("127.0.0.1", 10003);
+		peerTwo = new Peer("192.168.43.1", 10002);
+		peerThree = new Peer("192.168.43.4", 10003);
 		peerFour = new Peer("127.0.0.1", 10004);
 		peerFive = new Peer("127.0.0.1", 10005);
-		
-		Peer[] peers = {peerOne, peerTwo, peerThree, peerFour, peerFive};
-		Peer[] peersOne = {peerOne, peerThree, peerFour};
-		Peer[] peersTwo = {peerTwo, peerThree, peerFive};
+		peerSix = new Peer("172.21.1177", 10006);
 		
 		testSingleJoin(peerOne);
-		testSingleLeave(peerOne);
 		
-		testNetworkJoin(peers);
-		testNetworkLeave(peers);
-
-		testJoinLeaveMultiple(peerOne, peersOne, peersTwo);
+//		Peer[] peers = {peerOne, peerTwo, peerThree, peerFour, peerFive};//, peerSix};
+//		Peer[] peersOne = {peerOne, peerThree, peerFour};//, peerSix};
+//		Peer[] peersTwo = {peerTwo, peerThree, peerFive};
 		
-		testNetworkDoubleJoin(peerOne);
-		testNetworkDoubleLeave(peerOne);
+//		testSingleJoin(peerOne);
+//		testSingleLeave(peerOne);
+//		
+//		testNetworkJoin(peers);
+//		testNetworkLeave(peers);
+//
+//		testJoinLeaveMultiple(peerOne, peersOne, peersTwo);
+//		
+//		testNetworkDoubleJoin(peerOne);
+//		testNetworkDoubleLeave(peerOne);
+//		
+//		testSingleJoin(peerOne);
+//		testInsert("oi", peers);
+//		testInsert("mia", peers);
 		
-		testSingleJoin(peerOne);
-		testInsert("oi", peers);
-		testInsert("mia", peers);
-		
-		testQuery();
+//		testQuery();
 	}
 
 	public static void testSingleJoin(Peer peer) {
