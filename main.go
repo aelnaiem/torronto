@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
+	"code.google.com/p/go.exp/fsnotify"
 	"fmt"
-	"github.com/howeyc/fsnotify"
 	"io"
 	"net"
 	"os"
@@ -103,7 +103,7 @@ func listenForCommand() {
 			} else {
 				fmt.Printf("Joining... \n")
 				localPeer.join()
-				fmt.Printf("Joined... \n")
+				fmt.Printf("Joined \n")
 			}
 			fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrOK)
 		} else if strings.Contains(input[0], "leave") {
@@ -111,9 +111,9 @@ func listenForCommand() {
 			if localPeer.currentState == Disconnected {
 				fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrDisconnected)
 			} else {
-				fmt.Printf("Leaving.. \n")
+				fmt.Printf("Leaving... \n")
 				localPeer.leave()
-				fmt.Printf("Left... \n")
+				fmt.Printf("Left \n")
 			}
 			fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrOK)
 		} else if strings.Contains(input[0], "query") {
@@ -148,7 +148,7 @@ func listenForCommand() {
 							io.Copy(dfile, sfile)
 
 							fmt.Fprintf(os.Stderr, "Response: %d \n\n", ErrOK)
-							fmt.Printf("Inserted... \n")
+							fmt.Printf("Inserted \n\n")
 						}
 					}
 				}
@@ -286,18 +286,18 @@ func handleMessage(conn *net.TCPConn) {
 		case message.Action == Add:
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			localPeer.sendFileList(message.HostName, message.PortNumber)
-			fmt.Printf("Connected: %s:%d", message.HostName, message.PortNumber)
+			fmt.Printf("Connected: %s:%d\n\n", message.HostName, message.PortNumber)
 			return
 
 		case message.Action == Remove:
 			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
-			fmt.Printf("Disconnected: %s:%d", message.HostName, message.PortNumber)
+			fmt.Printf("Disconnected: %s:%d\n\n", message.HostName, message.PortNumber)
 			return
 
 		case message.Action == Files:
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			updateStatus(message.HostName, message.PortNumber, message.Files)
-			fmt.Printf("Updated file list from: %s:%d", message.HostName, message.PortNumber)
+			fmt.Printf("Updated file list from: %s:%d\n\n", message.HostName, message.PortNumber)
 			return
 
 		case message.Action == Upload:
@@ -309,7 +309,7 @@ func handleMessage(conn *net.TCPConn) {
 			return
 		case message.Action == Have:
 			updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
-			fmt.Printf("Updated status that %s:%d Has file:chunk %s:%d", message.HostName, message.PortNumber, message.Files[0].FileName, message.Files[0].Chunks[1])
+			fmt.Printf("Updated status that %s:%d Has file:chunk %s:%d\n\n", message.HostName, message.PortNumber, message.Files[0].FileName, message.Files[0].Chunks[1])
 			return
 		}
 	}

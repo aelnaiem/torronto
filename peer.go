@@ -30,15 +30,16 @@ func (peer *Peer) insert(fileName string) {
 			break
 		}
 	}
-
 	info, err := os.Stat(fileName)
 	checkError(err)
-
 	addLocalFile(fileName, info, nil)
+
+	if peer.peers.numPeers == 0 {
+		return
+	}
 
 	numChunks := int(math.Floor(float64(info.Size())/(ChunkSize+1) + 1))
 	max := math.Max(float64(peer.peers.numPeers), float64(numChunks))
-
 	chunk := 0
 	p := 0
 	for i := 0; i < int(max); {
@@ -53,10 +54,12 @@ func (peer *Peer) insert(fileName string) {
 			p += 1
 			continue
 		}
-		peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
-		chunk += 1
+		if nextPeer.currentState == Connected {
+			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
+			chunk += 1
+			i += 1
+		}
 		p += 1
-		i += 1
 	}
 	return
 }
@@ -177,7 +180,7 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	_, err = localFile.WriteAt(bytes.TrimRight(readBuffer, "\x00"), writeOffset)
 	checkError(err)
 
-	fmt.Printf("Downloaded file %s:%d from: %s:%d", file.FileName, file.Chunks[1])
+	fmt.Printf("Downloaded file %s:%d from: %s:%d \n\n", file.FileName, file.Chunks[1])
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
 	fileList := []File{file}
@@ -232,7 +235,7 @@ func (peer Peer) requestFile(file File) {
 		}
 	}
 	fileList := []File{file}
-	fmt.Printf("Requesting file %s:%d", file.FileName, file.Chunks[1])
+	fmt.Printf("Requesting file %s:%d\n\n", file.FileName, file.Chunks[1])
 	downloadMessage := encodeMessage(peer.host, peer.port, Download, fileList)
 	sendToAll(downloadMessage)
 	return
