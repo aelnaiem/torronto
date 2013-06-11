@@ -14,7 +14,6 @@ import (
 
 var localPeer Peer
 var status Status
-var numPeersInPeerFile int
 
 func main() {
 	if len(os.Args) != 2 {
