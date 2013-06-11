@@ -33,7 +33,6 @@ func (peer *Peer) insert(fileName string) {
 	info, err := os.Stat(fileName)
 	checkError(err)
 	addLocalFile(fileName, info, nil)
-
 	if peer.peers.numPeers == 0 {
 		return
 	}
@@ -143,8 +142,10 @@ func (peer Peer) sendFileList(hostName string, portNumber int) {
 }
 
 func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
+	status.mu.Lock()
 	if f, ok := status.status["local"].files[file.FileName]; ok {
 		if f.Chunks[file.Chunks[1]] == 1 {
+			status.mu.Unlock()
 			return
 		}
 	} else {
@@ -158,6 +159,9 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 			Chunks:   chunks,
 		}
 	}
+	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
+	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
+	status.mu.Unlock()
 
 	err := tcpConn.SetReadBuffer(ChunkSize)
 	checkError(err)
@@ -175,13 +179,11 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
-	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(bytes.TrimRight(readBuffer, "\x00"), writeOffset)
 	checkError(err)
 
-	fmt.Printf("Downloaded file %s:%d from: %s:%d \n\n", file.FileName, file.Chunks[1])
-	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
+	fmt.Printf("Downloaded file %s:%d \n\n", file.FileName, file.Chunks[1])
 
 	fileList := []File{file}
 	haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
