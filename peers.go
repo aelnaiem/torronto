@@ -17,36 +17,38 @@ type Peers struct {
 func (peers *Peers) initialize(peersFile string) {
 	content, err := ioutil.ReadFile("peersFile")
 	checkError(err)
-
 	lines := strings.Split(string(content), "\n")
-	if len(lines) > MaxPeers {
+	if (len(lines) - 1) > MaxPeers {
 		fmt.Fprintf(os.Stderr, "Too many peers in peersFile\n")
 		os.Exit(1)
 	}
 
-	peers.peers = make([]Peer, len(lines))
+	peersInFile = len(lines) - 1
+	peers.peers = make([]Peer, peersInFile)
 	peers.numPeers = 0
 	for i, line := range lines {
-		if len(line) == 0 {
-			continue
-		}
-
-		peerData := strings.Split(string(line), " ")
-		if len(peerData) != 2 {
-			continue
-		}
-
-		hostName := peerData[0]
-		portNumber, err := strconv.Atoi(peerData[1])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Malformed peer listing in peersFile line: %d\n", i)
-			os.Exit(1)
-		}
-
-		peers.peers[i] = Peer{
-			currentState: Unknown,
-			host:         hostName,
-			port:         portNumber,
+		if i < peersInFile && i < 6 {
+			if len(line) == 0 {
+				continue
+			}
+			if strings.Contains(string(line), "\r") == true {
+				line = strings.TrimRight(string(line), "\r")
+			}
+			peerData := strings.Split(string(line), " ")
+			if len(peerData) != 2 {
+				continue
+			}
+			hostName := peerData[0]
+			portNumber, err := strconv.Atoi(peerData[1])
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Malformed peer listing in peersFile line: %d\n", i)
+				os.Exit(1)
+			}
+			peers.peers[i] = Peer{
+				currentState: Unknown,
+				host:         hostName,
+				port:         portNumber,
+			}
 		}
 	}
 	return
@@ -68,7 +70,6 @@ func (peers *Peers) connectPeer(hostName string, portNumber int, files []File) {
 	if peer.currentState != Connected {
 		updateStatus(hostName, portNumber, files)
 		peers.numPeers += 1
-		// fmt.Printf("Number of peers: %d (inc)\n\n", peers.numPeers)
 	}
 
 	peer.currentState = Connected
