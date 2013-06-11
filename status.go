@@ -223,9 +223,7 @@ func incrementChunkReplication(fileName string, chunkNumber int, numChunks int) 
 func decrementPeerReplication(hostName string, portNumber int) {
 	fullName := strings.Join([]string{hostName, strconv.Itoa(portNumber)}, ":")
 	if _, ok := status.status[fullName]; !ok {
-		status.status[fullName] = peerStatus{
-			files: make(map[string]File),
-		}
+		return
 	}
 
 	for _, file := range status.status[fullName].files {
@@ -234,6 +232,10 @@ func decrementPeerReplication(hostName string, portNumber int) {
 				decrementChunkReplication(file.FileName, chunk, len(file.Chunks))
 			}
 		}
+	}
+
+	status.status[fullName] = peerStatus{
+		files: make(map[string]File),
 	}
 	return
 }

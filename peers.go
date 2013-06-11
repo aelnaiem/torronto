@@ -23,7 +23,7 @@ func (peers *Peers) initialize(peersFile string) {
 		os.Exit(1)
 	}
 
-	peersInFile = len(lines) - 1
+	peersInFile := len(lines) - 1
 	peers.peers = make([]Peer, peersInFile)
 	peers.numPeers = 0
 	for i, line := range lines {
@@ -81,10 +81,9 @@ func (peers *Peers) disconnectPeer(hostName string, portNumber int) {
 	checkError(err)
 
 	if peer.currentState == Connected {
-
 		decrementPeerReplication(hostName, portNumber)
 		peers.numPeers -= 1
-		fmt.Printf("Removing: %d\n\n", portNumber)
+		fmt.Printf("Decrementing: %s:%d\n\n", hostName, portNumber)
 	}
 
 	peer.currentState = Disconnected
