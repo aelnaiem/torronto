@@ -208,10 +208,10 @@ func handleMessage(conn *net.TCPConn) {
 	case message.Action == Join:
 		var response []byte
 		if localPeer.currentState == Connected {
-			//fmt.Printf("Not joining: %s \n\n", message)
+			fmt.Printf("Not joining: %s \n\n", message)
 			response = encodeError(ErrConnected)
 		} else {
-			//fmt.Printf("Joining: %s \n\n", message)
+			fmt.Printf("Joining: %s \n\n", message)
 			localPeer.join()
 			response = encodeError(ErrOK)
 		}
@@ -221,10 +221,8 @@ func handleMessage(conn *net.TCPConn) {
 	case message.Action == Leave:
 		var response []byte
 		if localPeer.currentState == Disconnected {
-			//fmt.Printf("Not Leaving: %s \n\n", message)
 			response = encodeError(ErrDisconnected)
 		} else {
-			//fmt.Printf("Leaving: %s \n\n", message)
 			localPeer.leave()
 			response = encodeError(ErrOK)
 		}
@@ -232,7 +230,6 @@ func handleMessage(conn *net.TCPConn) {
 		return
 
 	case message.Action == Query:
-		//fmt.Printf("query %s \n", message)
 		if localPeer.currentState == Disconnected {
 			response := encodeError(ErrDisconnected)
 			sendMessage(message.HostName, message.PortNumber, response)
@@ -280,10 +277,10 @@ func handleMessage(conn *net.TCPConn) {
 		return
 
 	// peer messages
-	// only act when peer is connected
 	case localPeer.currentState == Connected:
 		switch {
 		case message.Action == Add:
+			fmt.Println("Adding")
 			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
 			localPeer.sendFileList(message.HostName, message.PortNumber)
 			fmt.Printf("Connected: %s:%d\n\n", message.HostName, message.PortNumber)
