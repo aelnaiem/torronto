@@ -55,6 +55,15 @@ func (peer *Peer) insert(fileName string) {
 		}
 		if nextPeer.currentState == Connected {
 			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
+
+			f := File{
+				FileName: fileName,
+				Chunks:   []int{numChunks, chunk},
+			}
+			fileList := []File{f}
+			haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
+			sendToAll(haveMessage)
+
 			chunk += 1
 			i += 1
 		}
@@ -161,7 +170,6 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	}
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
-	status.mu.Unlock()
 
 	err := tcpConn.SetReadBuffer(ChunkSize)
 	checkError(err)
@@ -182,6 +190,8 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(bytes.TrimRight(readBuffer, "\x00"), writeOffset)
 	checkError(err)
+
+	status.mu.Unlock()
 
 	fmt.Printf("Downloaded file %s:%d \n\n", file.FileName, file.Chunks[1])
 

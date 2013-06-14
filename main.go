@@ -197,6 +197,10 @@ func sendToAll(msg []byte) {
 func handleMessage(conn *net.TCPConn) {
 	defer conn.Close()
 
+	if localPeer.currentState != Connected {
+		return
+	}
+
 	jsonMessage := make([]byte, HeaderSize)
 	_, err := conn.Read(jsonMessage)
 	checkError(err)
@@ -276,39 +280,36 @@ func handleMessage(conn *net.TCPConn) {
 		sendMessage(message.HostName, message.PortNumber, response)
 		return
 
-	// peer messages
-	case localPeer.currentState == Connected:
-		switch {
-		case message.Action == Add:
-			fmt.Println("Adding")
-			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
-			localPeer.sendFileList(message.HostName, message.PortNumber)
-			fmt.Printf("Connected: %s:%d\n\n", message.HostName, message.PortNumber)
-			return
+		// peer messages
+	case message.Action == Add:
+		fmt.Println("Adding")
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
+		localPeer.sendFileList(message.HostName, message.PortNumber)
+		fmt.Printf("Connected: %s:%d\n\n", message.HostName, message.PortNumber)
+		return
 
-		case message.Action == Remove:
-			localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
-			fmt.Printf("Disconnected: %s:%d\n\n", message.HostName, message.PortNumber)
-			return
+	case message.Action == Remove:
+		localPeer.peers.disconnectPeer(message.HostName, message.PortNumber)
+		fmt.Printf("Disconnected: %s:%d\n\n", message.HostName, message.PortNumber)
+		return
 
-		case message.Action == Files:
-			localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
-			updateStatus(message.HostName, message.PortNumber, message.Files)
-			fmt.Printf("Updated file list from: %s:%d\n\n", message.HostName, message.PortNumber)
-			return
+	case message.Action == Files:
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
+		updateStatus(message.HostName, message.PortNumber, message.Files)
+		fmt.Printf("Updated file list from: %s:%d\n\n", message.HostName, message.PortNumber)
+		return
 
-		case message.Action == Upload:
-			localPeer.downloadFile(message.Files[0], conn)
-			return
+	case message.Action == Upload:
+		localPeer.downloadFile(message.Files[0], conn)
+		return
 
-		case message.Action == Download:
-			localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
-			return
-		case message.Action == Have:
-			updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
-			fmt.Printf("Updated status that %s:%d Has file:chunk %s:%d\n\n", message.HostName, message.PortNumber, message.Files[0].FileName, message.Files[0].Chunks[1])
-			return
-		}
+	case message.Action == Download:
+		localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
+		return
+	case message.Action == Have:
+		updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
+		fmt.Printf("Updated status that %s:%d Has file:chunk %s:%d\n\n", message.HostName, message.PortNumber, message.Files[0].FileName, message.Files[0].Chunks[1])
+		return
 	}
 }
 
