@@ -197,7 +197,7 @@ func sendToAll(msg []byte) {
 func handleMessage(conn *net.TCPConn) {
 	defer conn.Close()
 
-	if localPeer.currentState == Connected {
+	if localPeer.currentState != Connected {
 		return
 	}
 
