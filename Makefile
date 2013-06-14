@@ -5,3 +5,4 @@ all:
 	cp torronto testenv/peer3/
 	cp torronto testenv/peer4/
 	cp torronto testenv/peer5/
+	cp torronto testenv/peer6/
