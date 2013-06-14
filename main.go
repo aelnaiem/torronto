@@ -175,9 +175,8 @@ func sendMessage(hostName string, portNumber int, msg []byte) error {
 	}
 
 	_, err = conn.Write(msg)
-	if err != nil {
-		localPeer.peers.disconnectPeer(hostName, portNumber)
-	}
+	checkError(err)
+
 	conn.Close()
 	conn = nil
 	return err
