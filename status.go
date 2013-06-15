@@ -106,10 +106,10 @@ func (status Status) averageReplicationLevel(fileArray []string) []float32 {
 	return arlArray
 }
 
-func (status Status) getFileList() []File {
-	fileList := []File{}
+func (status Status) getFileList() FileList {
+	fileList := FileList{}
 	for _, file := range status.status["local"].files {
-		fileList = append(fileList, file)
+		fileList.Files = append(fileList.Files, file)
 	}
 	return fileList
 }

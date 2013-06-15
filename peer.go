@@ -33,7 +33,15 @@ func (peer *Peer) insert(fileName string) {
 	info, err := os.Stat(fileName)
 	checkError(err)
 	addLocalFile(fileName, info, nil)
-	if peer.peers.numPeers == 0 {
+
+	connectedPeers := make([]Peer, peer.peers.numPeers)
+	for _, p := range peer.peers.peers {
+		if p.currentState == Connected && p.host != peer.host && p.port != peer.port {
+			connectedPeers = append(connectedPeers, p)
+		}
+	}
+
+	if len(connectedPeers) == 0 {
 		return
 	}
 
@@ -48,27 +56,24 @@ func (peer *Peer) insert(fileName string) {
 		if p >= peer.peers.numPeers {
 			p = 0
 		}
-		nextPeer := peer.peers.peers[p]
-		if nextPeer.host == peer.host && nextPeer.port == peer.port {
-			p += 1
-			continue
-		}
-		if nextPeer.currentState == Connected {
-			peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
+		nextPeer := connectedPeers[p]
+		peer.sendPeerChunk(nextPeer.host, nextPeer.port, fileName, numChunks, chunk, false)
 
-			f := File{
-				FileName: fileName,
-				Chunks:   []int{numChunks, chunk},
-			}
-			fileList := []File{f}
-			haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
-			sendToAll(haveMessage)
-
-			chunk += 1
-			i += 1
-		}
+		chunk += 1
+		i += 1
 		p += 1
 	}
+
+	for c := 0; c < numChunks; c++ {
+		f := File{
+			FileName: fileName,
+			Chunks:   []int{numChunks, c},
+		}
+		fileList := []File{f}
+		haveMessage := encodeMessage(peer.host, peer.port, Have, fileList)
+		sendToAll(haveMessage)
+	}
+
 	return
 }
 
@@ -94,8 +99,33 @@ func (peer Peer) query() {
 func (peer *Peer) join() {
 	peer.currentState = Connected
 	fileList := status.getFileList()
-	joinMessage := encodeMessage(peer.host, peer.port, Add, fileList)
-	sendToAll(joinMessage)
+	joinMessage := encodeMessage(peer.host, peer.port, Add, nil)
+
+	jsonFiles, err := json.Marshal(fileList)
+	checkError(err)
+
+	tmp := make([]byte, ChunkSize, ChunkSize)
+	copy(tmp, jsonFiles)
+	jsonFiles = tmp
+
+	messageToSend := append(joinMessage, jsonFiles...)
+	sendToAll(messageToSend)
+	return
+}
+
+func (peer Peer) sendFileList(hostName string, portNumber int) {
+	fileList := status.getFileList()
+	filesMessage := encodeMessage(peer.host, peer.port, Files, nil)
+
+	jsonFiles, err := json.Marshal(fileList)
+	checkError(err)
+
+	tmp := make([]byte, ChunkSize, ChunkSize)
+	copy(tmp, jsonFiles)
+	jsonFiles = tmp
+
+	messageToSend := append(filesMessage, jsonFiles...)
+	sendMessage(hostName, portNumber, messageToSend)
 	return
 }
 
@@ -143,14 +173,7 @@ func (peer *Peer) reset() {
 	}
 }
 
-func (peer Peer) sendFileList(hostName string, portNumber int) {
-	fileList := status.getFileList()
-	filesMessage := encodeMessage(peer.host, peer.port, Files, fileList)
-	sendMessage(hostName, portNumber, filesMessage)
-	return
-}
-
-func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
+func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
 	status.mu.Lock()
 	if f, ok := status.status["local"].files[file.FileName]; ok {
 		if f.Chunks[file.Chunks[1]] == 1 {
@@ -171,11 +194,11 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
-	err := tcpConn.SetReadBuffer(ChunkSize)
+	err := conn.SetReadBuffer(ChunkSize)
 	checkError(err)
 
 	readBuffer := make([]byte, ChunkSize)
-	_, err = tcpConn.Read(readBuffer)
+	_, err = conn.Read(readBuffer)
 	checkError(err)
 
 	basepath := path.Dir(file.FileName)
@@ -184,15 +207,28 @@ func (peer Peer) downloadFile(file File, tcpConn *net.TCPConn) {
 	checkError(err)
 
 	filePath := path.Join(basepath, fileName)
-	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
+	for {
+		localFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
+		if err == nil {
+			break
+		}
+		fmt.Println("ERROR")
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	checkError(err)
+
+	defer func() {
+		if err := localFile.Close(); err != nil {
+			checkError(err)
+		}
+	}()
 
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(bytes.TrimRight(readBuffer, "\x00"), writeOffset)
 	checkError(err)
 
 	status.mu.Unlock()
-
 	fmt.Printf("Downloaded file %s:%d \n\n", file.FileName, file.Chunks[1])
 
 	fileList := []File{file}

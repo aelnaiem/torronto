@@ -160,26 +160,24 @@ func listenForCommand() {
 func listenForMessages(listener *net.TCPListener) {
 	for {
 		conn, err := listener.AcceptTCP()
-		checkError(err)
-		go handleMessage(conn)
+		if err == nil && localPeer.currentState == Connected {
+			go handleMessage(conn)
+		} else {
+			conn.Close()
+		}
 	}
 }
 
-func sendMessage(hostName string, portNumber int, msg []byte) error {
+func sendMessage(hostName string, portNumber int, msg []byte) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", net.JoinHostPort(hostName, strconv.Itoa(portNumber)))
 	checkError(err)
+
 	var conn *net.TCPConn
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		localPeer.peers.disconnectPeer(hostName, portNumber)
-	}
-
+	defer conn.Close()
 	_, err = conn.Write(msg)
-	checkError(err)
 
-	conn.Close()
-	conn = nil
-	return err
+	return
 }
 
 func sendToAll(msg []byte) {
@@ -195,10 +193,6 @@ func sendToAll(msg []byte) {
 
 func handleMessage(conn *net.TCPConn) {
 	defer conn.Close()
-
-	if localPeer.currentState != Connected {
-		return
-	}
 
 	jsonMessage := make([]byte, HeaderSize)
 	_, err := conn.Read(jsonMessage)
@@ -281,8 +275,7 @@ func handleMessage(conn *net.TCPConn) {
 
 		// peer messages
 	case message.Action == Add:
-		fmt.Println("Adding")
-		localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber, conn)
 		localPeer.sendFileList(message.HostName, message.PortNumber)
 		fmt.Printf("Connected: %s:%d\n\n", message.HostName, message.PortNumber)
 		return
@@ -293,8 +286,7 @@ func handleMessage(conn *net.TCPConn) {
 		return
 
 	case message.Action == Files:
-		localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
-		updateStatus(message.HostName, message.PortNumber, message.Files)
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber, conn)
 		fmt.Printf("Updated file list from: %s:%d\n\n", message.HostName, message.PortNumber)
 		return
 

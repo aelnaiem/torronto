@@ -11,6 +11,10 @@ type File struct {
 	Chunks   []int
 }
 
+type FileList struct {
+	Files []File
+}
+
 func addLocalFile(path string, info os.FileInfo, err error) error {
 	if info.IsDir() {
 		return nil
