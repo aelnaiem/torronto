@@ -174,6 +174,12 @@ func (peer *Peer) reset() {
 }
 
 func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
+	if f, ok := status.status["local"].files[file.FileName]; ok {
+		if f.Chunks[file.Chunks[1]] == 1 {
+			return
+		}
+	}
+
 	err := conn.SetReadBuffer(ChunkSize)
 	checkError(err)
 
