@@ -174,6 +174,14 @@ func (peer *Peer) reset() {
 }
 
 func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
+	err := conn.SetReadBuffer(ChunkSize)
+	checkError(err)
+
+	readBuffer := make([]byte, ChunkSize)
+	_, err = conn.Read(readBuffer)
+	checkError(err)
+	conn.Close()
+
 	status.mu.Lock()
 	if f, ok := status.status["local"].files[file.FileName]; ok {
 		if f.Chunks[file.Chunks[1]] == 1 {
@@ -194,28 +202,14 @@ func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
-	err := conn.SetReadBuffer(ChunkSize)
-	checkError(err)
-
-	readBuffer := make([]byte, ChunkSize)
-	_, err = conn.Read(readBuffer)
-	checkError(err)
-
 	basepath := path.Dir(file.FileName)
 	fileName := path.Base(file.FileName)
 	err = os.MkdirAll(basepath, 0777)
 	checkError(err)
 
 	filePath := path.Join(basepath, fileName)
-	for {
-		localFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
-		if err == nil {
-			break
-		}
-		fmt.Println("ERROR")
-		time.Sleep(100 * time.Millisecond)
-	}
 
+	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
 	checkError(err)
 
 	defer func() {

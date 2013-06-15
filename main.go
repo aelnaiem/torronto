@@ -174,9 +174,8 @@ func sendMessage(hostName string, portNumber int, msg []byte) {
 
 	var conn *net.TCPConn
 	conn, err = net.DialTCP("tcp", nil, tcpAddr)
-	defer conn.Close()
 	_, err = conn.Write(msg)
-
+	conn.Close()
 	return
 }
 
@@ -200,7 +199,6 @@ func handleMessage(conn *net.TCPConn) {
 
 	message := decodeMessage(jsonMessage)
 	switch {
-
 	// interface messages
 	case message.Action == Join:
 		var response []byte
@@ -297,6 +295,7 @@ func handleMessage(conn *net.TCPConn) {
 	case message.Action == Download:
 		localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
 		return
+
 	case message.Action == Have:
 		updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
 		fmt.Printf("Updated status that %s:%d Has file:chunk %s:%d\n\n", message.HostName, message.PortNumber, message.Files[0].FileName, message.Files[0].Chunks[1])
