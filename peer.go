@@ -8,6 +8,8 @@ import (
 	"net"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -36,7 +38,7 @@ func (peer *Peer) insert(fileName string) {
 
 	connectedPeers := make([]Peer, peer.peers.numPeers)
 	for _, p := range peer.peers.peers {
-		if p.currentState == Connected && p.host != peer.host && p.port != peer.port {
+		if p.currentState == Connected && (p.host != peer.host || p.port != peer.port) {
 			connectedPeers = append(connectedPeers, p)
 		}
 	}
@@ -178,22 +180,6 @@ func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
 		if f.Chunks[file.Chunks[1]] == 1 {
 			return
 		}
-	}
-
-	err := conn.SetReadBuffer(ChunkSize)
-	checkError(err)
-
-	readBuffer := make([]byte, ChunkSize)
-	_, err = conn.Read(readBuffer)
-	checkError(err)
-	conn.Close()
-
-	status.mu.Lock()
-	if f, ok := status.status["local"].files[file.FileName]; ok {
-		if f.Chunks[file.Chunks[1]] == 1 {
-			status.mu.Unlock()
-			return
-		}
 	} else {
 		chunks := make([]int, file.Chunks[0])
 		for chunk := range chunks {
@@ -208,6 +194,15 @@ func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
 	status.status["local"].files[file.FileName].Chunks[file.Chunks[1]] = 1
 	incrementChunkReplication(file.FileName, file.Chunks[1], file.Chunks[0])
 
+	err := conn.SetReadBuffer(ChunkSize)
+	checkError(err)
+
+	readBuffer := make([]byte, ChunkSize)
+	_, err = conn.Read(readBuffer)
+	checkError(err)
+	conn.Close()
+
+	status.mu.Lock()
 	basepath := path.Dir(file.FileName)
 	fileName := path.Base(file.FileName)
 	err = os.MkdirAll(basepath, 0777)
@@ -216,6 +211,15 @@ func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
 	filePath := path.Join(basepath, fileName)
 
 	localFile, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		for {
+			localFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0777)
+			if err == nil {
+				break
+			}
+		}
+	}
+
 	checkError(err)
 
 	defer func() {
@@ -241,6 +245,21 @@ func (peer Peer) uploadFile(hostName string, portNumber int, file File) {
 	if f, ok := status.status["local"].files[file.FileName]; ok {
 		if f.Chunks[file.Chunks[1]] == 1 {
 			peer.sendPeerChunk(hostName, portNumber, file.FileName, file.Chunks[0], file.Chunks[1], false)
+			return
+		}
+	}
+
+	fileList := []File{file}
+	downloadMessage := encodeMessage(hostName, portNumber, Download, fileList)
+	for _, p := range peer.peers.peers {
+		if p.currentState == Connected && (p.host != peer.host || p.port != peer.port) {
+			fullName := strings.Join([]string{p.host, strconv.Itoa(p.port)}, ":")
+			if f, ok := status.status[fullName].files[file.FileName]; ok {
+				if f.Chunks[file.Chunks[1]] == 1 {
+					sendMessage(p.host, p.port, downloadMessage)
+					return
+				}
+			}
 		}
 	}
 	return
@@ -276,7 +295,7 @@ func (peer Peer) sendPeerChunk(hostName string, portNumber int, fileName string,
 	}
 }
 
-func (peer Peer) requestFile(file File) {
+func (peer Peer) requestFile(hostName string, portNumber int, file File) {
 	if f, ok := status.status["local"].files[file.FileName]; ok {
 		if f.Chunks[file.Chunks[1]] == 1 {
 			return
@@ -285,7 +304,7 @@ func (peer Peer) requestFile(file File) {
 	fileList := []File{file}
 	fmt.Printf("Requesting file %s:%d\n\n", file.FileName, file.Chunks[1])
 	downloadMessage := encodeMessage(peer.host, peer.port, Download, fileList)
-	sendToAll(downloadMessage)
+	sendMessage(hostName, portNumber, downloadMessage)
 	return
 }
 

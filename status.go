@@ -139,7 +139,7 @@ func updateHaveStatus(hostName string, portNumber int, file File) {
 	}
 	status.mu.Unlock()
 
-	localPeer.requestFile(file)
+	localPeer.requestFile(hostName, portNumber, file)
 	return
 }
 
@@ -168,7 +168,7 @@ func updateStatus(hostName string, portNumber int, files []File) {
 					FileName: file.FileName,
 					Chunks:   chunks,
 				}
-				localPeer.requestFile(f)
+				localPeer.requestFile(hostName, portNumber, f)
 				status.mu.Unlock()
 			}
 		}

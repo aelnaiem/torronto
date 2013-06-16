@@ -30,7 +30,7 @@ func (peers *Peers) initialize(peersFile string) {
 	peers.peers = make([]Peer, peersInFile)
 	peers.numPeers = 0
 	for i, line := range lines {
-		if i < peersInFile && i < 6 {
+		if i < peersInFile && i <= MaxPeers {
 			if len(line) == 0 {
 				continue
 			}
