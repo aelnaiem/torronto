@@ -107,6 +107,11 @@ _When a joins the network, it send out a message that it's joining and a list of
   "HostName": "<HostName>",
   "PortNumber": "<PortNumber>",
   "Action": 4,
+}
+```
+This is followed by the file list
+```
+{
   "Files":
     [
       {
@@ -138,6 +143,11 @@ _When a joins the network, it send out a message that it's joining and a list of
   "HostName": "<HostName>",
   "PortNumber": "<PortNumber>",
   "Action": 6,
+}
+```
+This is followed by the file list
+```
+{
   "Files":
     [
       {
