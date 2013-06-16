@@ -220,16 +220,11 @@ func (peer Peer) downloadFile(file File, conn *net.TCPConn) {
 		}
 	}
 
-	checkError(err)
-
-	defer func() {
-		if err := localFile.Close(); err != nil {
-			checkError(err)
-		}
-	}()
-
 	writeOffset := int64(file.Chunks[1] * ChunkSize)
 	_, err = localFile.WriteAt(bytes.TrimRight(readBuffer, "\x00"), writeOffset)
+	checkError(err)
+
+	err = localFile.Close()
 	checkError(err)
 
 	status.mu.Unlock()

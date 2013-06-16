@@ -173,15 +173,31 @@ func sendMessage(hostName string, portNumber int, msg []byte) {
 	checkError(err)
 
 	var conn *net.TCPConn
-	conn, err = net.DialTCP("tcp", nil, tcpAddr)
+	for {
+		conn, err = net.DialTCP("tcp", nil, tcpAddr)
+		if err != nil {
+			switch e := err.(type) {
+			case (*net.OpError):
+				if e.Err.Error() == "connection refused" {
+					return
+				}
+			default:
+				fmt.Println(err)
+			}
+		} else {
+			break
+		}
+	}
+
 	_, err = conn.Write(msg)
+	checkError(err)
 	conn.Close()
 	return
 }
 
 func sendToAll(msg []byte) {
 	for _, peer := range localPeer.peers.peers {
-		if !(peer.host == localPeer.host && peer.port == localPeer.port) {
+		if peer.host != localPeer.host || peer.port != localPeer.port {
 			if peer.currentState != Disconnected {
 				sendMessage(peer.host, peer.port, msg)
 			}

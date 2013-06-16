@@ -26,11 +26,11 @@ func (peers *Peers) initialize(peersFile string) {
 		os.Exit(1)
 	}
 
-	peersInFile := len(lines) - 1
+	peersInFile := len(lines)
 	peers.peers = make([]Peer, peersInFile)
 	peers.numPeers = 0
 	for i, line := range lines {
-		if i < peersInFile && i <= MaxPeers {
+		if i < peersInFile && i < MaxPeers {
 			if len(line) == 0 {
 				continue
 			}
