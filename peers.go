@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -23,11 +26,11 @@ func (peers *Peers) initialize(peersFile string) {
 		os.Exit(1)
 	}
 
-	peersInFile := len(lines) - 1
+	peersInFile := len(lines)
 	peers.peers = make([]Peer, peersInFile)
 	peers.numPeers = 0
 	for i, line := range lines {
-		if i < peersInFile && i < 6 {
+		if i < peersInFile && i < MaxPeers {
 			if len(line) == 0 {
 				continue
 			}
@@ -63,12 +66,25 @@ func (peers Peers) getPeer(hostName string, portNumber int) (*Peer, error) {
 	return &Peer{}, errors.New("Invalid host and/or port")
 }
 
-func (peers *Peers) connectPeer(hostName string, portNumber int, files []File) {
+func (peers *Peers) connectPeer(hostName string, portNumber int, conn *net.TCPConn) {
 	peer, err := peers.getPeer(hostName, portNumber)
 	checkError(err)
 
+	err = conn.SetReadBuffer(ChunkSize)
+	checkError(err)
+
+	readBuffer := make([]byte, ChunkSize)
+	_, err = conn.Read(readBuffer)
+	checkError(err)
+
+	var fileList FileList
+	readBuffer = bytes.TrimRight(readBuffer, "\x00")
+
+	err = json.Unmarshal(readBuffer, &fileList)
+	checkError(err)
+
 	if peer.currentState != Connected {
-		updateStatus(hostName, portNumber, files)
+		updateStatus(hostName, portNumber, fileList.Files)
 		peers.numPeers += 1
 	}
 

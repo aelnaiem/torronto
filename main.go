@@ -160,32 +160,44 @@ func listenForCommand() {
 func listenForMessages(listener *net.TCPListener) {
 	for {
 		conn, err := listener.AcceptTCP()
-		checkError(err)
-		go handleMessage(conn)
+		if err == nil && localPeer.currentState == Connected {
+			go handleMessage(conn)
+		} else {
+			conn.Close()
+		}
 	}
 }
 
-func sendMessage(hostName string, portNumber int, msg []byte) error {
+func sendMessage(hostName string, portNumber int, msg []byte) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", net.JoinHostPort(hostName, strconv.Itoa(portNumber)))
 	checkError(err)
+
 	var conn *net.TCPConn
-	conn, err = net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		localPeer.peers.disconnectPeer(hostName, portNumber)
+	for {
+		conn, err = net.DialTCP("tcp", nil, tcpAddr)
+		if err != nil {
+			switch e := err.(type) {
+			case (*net.OpError):
+				if e.Err.Error() == "connection refused" {
+					return
+				}
+			default:
+				fmt.Println(err)
+			}
+		} else {
+			break
+		}
 	}
 
 	_, err = conn.Write(msg)
-	if err != nil {
-		localPeer.peers.disconnectPeer(hostName, portNumber)
-	}
+	checkError(err)
 	conn.Close()
-	conn = nil
-	return err
+	return
 }
 
 func sendToAll(msg []byte) {
 	for _, peer := range localPeer.peers.peers {
-		if !(peer.host == localPeer.host && peer.port == localPeer.port) {
+		if peer.host != localPeer.host || peer.port != localPeer.port {
 			if peer.currentState != Disconnected {
 				sendMessage(peer.host, peer.port, msg)
 			}
@@ -197,17 +209,12 @@ func sendToAll(msg []byte) {
 func handleMessage(conn *net.TCPConn) {
 	defer conn.Close()
 
-	if localPeer.currentState != Connected {
-		return
-	}
-
 	jsonMessage := make([]byte, HeaderSize)
 	_, err := conn.Read(jsonMessage)
 	checkError(err)
 
 	message := decodeMessage(jsonMessage)
 	switch {
-
 	// interface messages
 	case message.Action == Join:
 		var response []byte
@@ -282,8 +289,7 @@ func handleMessage(conn *net.TCPConn) {
 
 		// peer messages
 	case message.Action == Add:
-		fmt.Println("Adding")
-		localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber, conn)
 		localPeer.sendFileList(message.HostName, message.PortNumber)
 		fmt.Printf("Connected: %s:%d\n\n", message.HostName, message.PortNumber)
 		return
@@ -294,8 +300,7 @@ func handleMessage(conn *net.TCPConn) {
 		return
 
 	case message.Action == Files:
-		localPeer.peers.connectPeer(message.HostName, message.PortNumber, message.Files)
-		updateStatus(message.HostName, message.PortNumber, message.Files)
+		localPeer.peers.connectPeer(message.HostName, message.PortNumber, conn)
 		fmt.Printf("Updated file list from: %s:%d\n\n", message.HostName, message.PortNumber)
 		return
 
@@ -306,6 +311,7 @@ func handleMessage(conn *net.TCPConn) {
 	case message.Action == Download:
 		localPeer.uploadFile(message.HostName, message.PortNumber, message.Files[0])
 		return
+
 	case message.Action == Have:
 		updateHaveStatus(message.HostName, message.PortNumber, message.Files[0])
 		fmt.Printf("Updated status that %s:%d Has file:chunk %s:%d\n\n", message.HostName, message.PortNumber, message.Files[0].FileName, message.Files[0].Chunks[1])

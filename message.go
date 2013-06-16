@@ -28,7 +28,7 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 	jsonMessage, err := json.Marshal(message)
 	checkError(err)
 
-	if action == Upload {
+	if action == Upload || action == Add || action == Files {
 		tmp := make([]byte, HeaderSize, HeaderSize)
 		copy(tmp, jsonMessage)
 		jsonMessage = tmp
@@ -38,7 +38,7 @@ func encodeMessage(hostName string, portNumber int, action int, files []File) []
 
 func decodeMessage(jsonMessage []byte) Message {
 	var message Message
-	jsonMessage = bytes.Trim(jsonMessage, "\x00")
+	jsonMessage = bytes.TrimRight(jsonMessage, "\x00")
 
 	err := json.Unmarshal(jsonMessage, &message)
 	checkError(err)
