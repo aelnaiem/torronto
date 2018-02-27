@@ -1,7 +1,5 @@
 torronto - A BitTorrent Implementation in Go
 ============================================
-## TODO
-* insert large file only sending half the file
 
 ## Torronto Messaging Documentation
 
